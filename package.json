@@ -1,0 +1,31 @@
+{
+  "name": "gpa-tracker",
+  "version": "1.0.0",
+  "description": "A GPA tracking application with authentication and cross-device synchronization",
+  "main": "server/index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd server && npm run dev",
+    "client": "cd client && npm start",
+    "build": "npm run install-deps && cd client && npm run build",
+    "install-deps": "npm install && cd server && npm install && cd ../client && npm install",
+    "start": "cd server && npm start",
+    "postinstall": "npm run install-deps"
+  },
+  "keywords": [
+    "gpa",
+    "tracker",
+    "education",
+    "grades"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "@fontsource/inter": "^5.2.6",
+    "react-helmet": "^6.1.0",
+    "react-helmet-async": "^2.0.5"
+  }
+}
