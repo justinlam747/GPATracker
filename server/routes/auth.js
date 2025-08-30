@@ -62,7 +62,7 @@ router.post('/register',
     validate(registerSchema),
     async (req, res) => {
         try {
-            const { email, password, name } = req.body;
+            const { email, password, firstName, lastName } = req.body;
 
             // Check if user already exists
             let user = await User.findOne({ email });
@@ -72,11 +72,6 @@ router.post('/register',
                     code: 'USER_EXISTS'
                 });
             }
-
-            // Split name into firstName and lastName
-            const nameParts = name.trim().split(' ');
-            const firstName = nameParts[0] || '';
-            const lastName = nameParts.slice(1).join(' ') || '';
 
             // Create new user
             user = new User({
