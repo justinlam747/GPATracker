@@ -49,9 +49,20 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const register = async (name, email, password) => {
+    const register = async (name, email, password, confirmPassword) => {
         try {
-            const response = await api.post('/auth/register', { name, email, password });
+            // Split name into firstName and lastName
+            const nameParts = name.trim().split(' ');
+            const firstName = nameParts[0] || '';
+            const lastName = nameParts.slice(1).join(' ') || nameParts[0] || '';
+
+            const response = await api.post('/auth/register', {
+                firstName,
+                lastName,
+                email,
+                password,
+                confirmPassword
+            });
             const { token, user } = response.data;
 
             localStorage.setItem('token', token);
