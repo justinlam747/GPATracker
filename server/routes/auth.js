@@ -30,7 +30,7 @@ const generateTokens = (userId) => {
     const accessToken = jwt.sign(
         { userId },
         process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET || 'fallback-secret',
-        { expiresIn: process.env.ACCESS_TOKEN_EXPIRY || '10m' }
+        { expiresIn: process.env.ACCESS_TOKEN_EXPIRY || '24h' }
     );
 
     const refreshToken = jwt.sign(
@@ -102,7 +102,7 @@ router.post('/register',
 
             res.status(201).json({
                 message: 'User registered successfully. Please check your email for verification.',
-                token: accessToken,
+                accessToken, // Changed from 'token' to 'accessToken'
                 user: {
                     id: user._id,
                     email: user.email,
