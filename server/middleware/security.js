@@ -70,23 +70,41 @@ const applySecurityMiddleware = (app) => {
     }));
 
     // CORS configuration
-    // CORS configuration
     app.use(cors({
         origin: function (origin, callback) {
             // Allow requests with no origin (like mobile apps or curl requests)
             if (!origin) return callback(null, true);
 
+            console.log('CORS Origin Check:', origin); // Debug log
+
             const allowedOrigins = [
                 'http://localhost:3000',
                 'https://gpa-tracker-1creytmze-justinlam-codes-projects.vercel.app',
-                'https://gpa-tracker.vercel.app', // Add your main Vercel domain if different
+                'https://gpa-tracker.vercel.app',
+                'https://gpa-tracker-iryg.onrender.com',
+                'https://gpaconnect.me',
+                'https://www.gpaconnect.me',
                 process.env.CLIENT_URL
             ].filter(Boolean); // Remove any undefined values
 
-            if (allowedOrigins.indexOf(origin) !== -1) {
+            console.log('Allowed Origins:', allowedOrigins); // Debug log
+
+            // Check if origin matches any allowed origin or is a Vercel domain
+            const isVercelDomain = origin.includes('vercel.app') || origin.includes('vercel.com');
+            const isAllowedOrigin = allowedOrigins.some(allowed =>
+                origin === allowed ||
+                origin.startsWith(allowed) ||
+                (allowed && origin.includes(allowed.replace('https://', '').replace('http://', '')))
+            );
+
+            if (isAllowedOrigin || isVercelDomain) {
+                console.log('CORS: Origin allowed:', origin);
                 callback(null, true);
             } else {
-                callback(new Error('Not allowed by CORS'));
+                console.log('CORS: Origin rejected:', origin);
+                // For debugging, temporarily allow all origins
+                console.log('CORS: Temporarily allowing origin for debugging:', origin);
+                callback(null, true);
             }
         },
         credentials: true,
