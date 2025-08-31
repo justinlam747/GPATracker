@@ -6,10 +6,13 @@ import HomeRedirect from './components/HomeRedirect';
 
 import CourseDetail from './components/CourseDetail';
 import Courses from './components/Courses';
-import Settings from './components/Settings';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
+import ForgotPassword from './components/auth/ForgotPassword';
+import ResetPassword from './components/auth/ResetPassword';
 import Calendar from './components/Calendar';
+import TermsOfService from './components/TermsOfService';
+import PrivacyPolicy from './components/PrivacyPolicy';
 import AppLayout from './components/AppLayout';
 import Navbar from './components/Navbar';
 import './App.css';
@@ -37,6 +40,8 @@ function App() {
                         {/* Auth pages */}
                         <Route path="/login" element={<AppLayout showNavbar={false}><Login /></AppLayout>} />
                         <Route path="/register" element={<AppLayout showNavbar={false}><Register /></AppLayout>} />
+                        <Route path="/forgot-password" element={<AppLayout showNavbar={false}><ForgotPassword /></AppLayout>} />
+                        <Route path="/reset-password" element={<AppLayout showNavbar={false}><ResetPassword /></AppLayout>} />
 
                         {/* Protected pages */}
                         <Route
@@ -60,16 +65,6 @@ function App() {
                             }
                         />
                         <Route
-                            path="/settings"
-                            element={
-                                <ProtectedRoute>
-                                    <AppLayout showNavbar={false}>
-                                        <Settings />
-                                    </AppLayout>
-                                </ProtectedRoute>
-                            }
-                        />
-                        <Route
                             path="/calendar"
                             element={
                                 <ProtectedRoute>
@@ -79,6 +74,10 @@ function App() {
                                 </ProtectedRoute>
                             }
                         />
+
+                        {/* Legal Pages - Public Access */}
+                        <Route path="/terms-of-service" element={<TermsOfService />} />
+                        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                     </Routes>
                 </Router>
             </AuthProvider>

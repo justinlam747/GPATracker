@@ -12,6 +12,7 @@ const {
     emailVerificationSchema,
     refreshTokenSchema
 } = require('../validations/auth');
+const emailService = require('../services/emailService');
 
 const router = express.Router();
 
@@ -62,7 +63,7 @@ router.post('/register',
     validate(registerSchema),
     async (req, res) => {
         try {
-            const { email, password, firstName, lastName } = req.body;
+            const { email, password, firstName } = req.body;
 
             // Check if user already exists
             let user = await User.findOne({ email });
@@ -78,7 +79,6 @@ router.post('/register',
                 email,
                 password,
                 firstName,
-                lastName,
                 gpaScale: '4.0'
             });
 
@@ -445,7 +445,19 @@ router.post('/forgot-password',
             const resetToken = user.generatePasswordResetToken();
             await user.save();
 
-            // TODO: Send password reset email with resetToken
+            // Send password reset email
+            try {
+                await emailService.sendPasswordResetEmail(
+                    user.email,
+                    resetToken,
+                    user.firstName
+                );
+                console.log(`✅ Password reset email sent to: ${user.email}`);
+            } catch (emailError) {
+                console.error('❌ Failed to send password reset email:', emailError);
+                // Don't fail the request if email fails - log it instead
+                // This prevents revealing if the user exists
+            }
 
             res.json({
                 message: 'If an account with that email exists, a password reset link has been sent.',

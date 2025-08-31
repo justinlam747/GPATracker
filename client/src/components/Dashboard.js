@@ -3,44 +3,33 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { convertGPA, formatGPA, getLetterGrade, getGradeColor } from '../utils/scaleConverter';
 import AddCourseModal from './AddCourseModal';
+import Footer from './Footer';
 import api from '../utils/api';
 import {
     BookOpen,
     Plus,
-    Save,
-    X,
-    ArrowLeft,
     GraduationCap,
     BarChart3,
     Calendar,
-    Clock,
     TrendingUp,
     Target,
     Award,
-    Filter,
     Eye,
     RefreshCw,
-    User,
     Shield,
-    Bell,
-    LogIn,
-    Mail,
-    Star,
     Trash2,
-    ChevronRight,
-    LogOut
+    LogOut,
+    FileText,
+    Lock
 } from 'lucide-react';
 import {
     LineChart,
     Line,
-    BarChart,
-    Bar,
     ResponsiveContainer,
     XAxis,
     YAxis,
     CartesianGrid,
-    Tooltip,
-    Legend
+    Tooltip
 } from 'recharts';
 
 const Dashboard = () => {
@@ -48,10 +37,9 @@ const Dashboard = () => {
     const [courses, setCourses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [gpaPrediction, setGpaPrediction] = useState('');
-    const [predictionResult, setPredictionResult] = useState(null);
+
     const [lastRefresh, setLastRefresh] = useState(0);
-    const [studyLogs, setStudyLogs] = useState([]);
+
     const [isAddCourseModalOpen, setIsAddCourseModalOpen] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [predictionData, setPredictionData] = useState({
@@ -62,17 +50,11 @@ const Dashboard = () => {
         examGrade: '',
         finalGrade: ''
     });
-    const [newStudyLog, setNewStudyLog] = useState({
-        courseId: '',
-        hours: '',
-        date: new Date().toISOString().split('T')[0],
-        notes: ''
-    });
+
 
     useEffect(() => {
         // Only fetch data once when component mounts
         fetchCourses();
-        fetchStudyLogs();
     }, []); // Empty dependency array - only run once
 
     const fetchCourses = async () => {
@@ -95,16 +77,7 @@ const Dashboard = () => {
         }
     };
 
-    const fetchStudyLogs = async () => {
-        try {
-            const response = await api.get('/gpa/study-logs');
-            if (response.data) {
-                setStudyLogs(response.data.studyLogs || []);
-            }
-        } catch (error) {
-            console.error('Error fetching study logs:', error);
-        }
-    };
+
 
     const calculateGPA = useCallback(() => {
         const coursesArray = courses || [];
@@ -170,25 +143,7 @@ const Dashboard = () => {
         }
     };
 
-    const addStudyLog = async () => {
-        if (!newStudyLog.courseId || !newStudyLog.hours) return;
 
-        try {
-            const response = await api.post('/gpa/study-logs', newStudyLog);
-            if (response.data) {
-                setNewStudyLog({
-                    courseId: '',
-                    hours: '',
-                    date: new Date().toISOString().split('T')[0],
-                    notes: ''
-                });
-                fetchStudyLogs();
-            }
-        } catch (error) {
-            console.error('Error adding study log:', error);
-            setError('Failed to add study log');
-        }
-    };
 
     const handleRevertOverride = async (courseId) => {
         try {
@@ -274,13 +229,7 @@ const Dashboard = () => {
             .slice(0, 5);
     };
 
-    const getDisplayLetterGrade = (course) => {
-        if (course.gradeOverride !== undefined) {
-            return course.gradeOverride;
-        }
-        const userScale = user?.gpaScale || '4.0';
-        return getLetterGrade(course.gradePoints || 0, userScale);
-    };
+
 
     const getDisplayGradeColor = (grade) => {
         if (!grade || grade === 'N/A') return 'bg-gray-100 text-gray-800';
@@ -319,13 +268,7 @@ const Dashboard = () => {
         }
     };
 
-    const formatGradePoints = (course) => {
-        const userScale = user?.gpaScale || '4.0';
-        if (course.gradeOverride !== undefined) {
-            return formatGPA(convertGPA(course.gradePoints || 0, '4.0', userScale), userScale);
-        }
-        return formatGPA(course.gradePoints || 0, userScale);
-    };
+
 
     const recentCourses = (courses || []).slice(0, 7);
 
@@ -350,7 +293,7 @@ const Dashboard = () => {
 
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen lg:h-screen bg-gray-50 lg:overflow-hidden">
             {/* Mobile Header */}
             <div className="lg:hidden bg-white border-b border-gray-200 p-4">
                 <div className="flex items-center justify-between">
@@ -371,9 +314,9 @@ const Dashboard = () => {
                 </div>
             </div>
 
-            <div className="flex flex-col lg:flex-row">
+            <div className="flex flex-col lg:flex-row lg:h-screen">
                 {/* Left Sidebar */}
-                <div className={`${sidebarOpen ? 'block' : 'hidden'} lg:block w-full lg:w-64 bg-white border-b lg:border-b-0 lg:border-r border-gray-200 min-h-screen lg:min-h-screen p-4 lg:p-6`}>
+                <div className={`${sidebarOpen ? 'block' : 'hidden'} lg:block w-full lg:w-64 bg-white border-b lg:border-b-0 lg:border-r border-gray-200 min-h-screen lg:min-h-full lg:max-h-screen lg:overflow-y-auto lg:sticky lg:top-0 p-4 lg:p-6`}>
                     {/* Mobile close button */}
                     <div className="flex items-center justify-between lg:hidden mb-4">
                         <div className="flex items-center space-x-2">
@@ -412,7 +355,7 @@ const Dashboard = () => {
                         <span className="text-xl font-semibold text-gray-900">GPAConnect</span>
                     </div>
 
-                    <nav className="space-y-2">
+                    <nav className="space-y-2 mb-6">
                         <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">OVERVIEW</div>
                         <a href="#stats" onClick={(e) => { e.preventDefault(); document.getElementById('stats').scrollIntoView({ behavior: 'smooth', block: 'center' }); }} className="flex items-center space-x-3 px-3 py-2 bg-blue-50 text-black rounded-lg">
                             <BarChart3 className="h-5 w-5" />
@@ -427,16 +370,34 @@ const Dashboard = () => {
                             <span>Grade Predictions</span>
                         </a>
 
-                        <a href="#deadlines" onClick={(e) => { e.preventDefault(); document.getElementById('deadlines').scrollIntoView({ behavior: 'smooth', block: 'center' }); }} className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
+                        <Link to="/calendar" className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
                             <Calendar className="h-5 w-5" />
                             <span>Deadlines</span>
-                        </a>
+                        </Link>
 
-
+                        <Link
+                            to="/courses"
+                            className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                        >
+                            <BookOpen className="h-5 w-5" />
+                            <span>View All Courses</span>
+                        </Link>
                     </nav>
 
+                    {/* Quick Actions */}
+                    <div className="mb-6">
+                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">QUICK ACTIONS</div>
+                        <button
+                            onClick={() => setIsAddCourseModalOpen(true)}
+                            className="w-full flex items-center space-x-3 px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg transition-all duration-300 border hover:from-blue-700 hover:to-indigo-700 border-gray-300"
+                        >
+                            <Plus className="h-5 w-5" />
+                            <span>Add Course</span>
+                        </button>
+                    </div>
+
                     {/* Refresh Button */}
-                    <div className="mt-8 pt-6 border-t border-gray-200">
+                    <div className="mb-6 pt-6 border-t border-gray-200">
                         <button
                             onClick={() => {
                                 const now = Date.now();
@@ -447,10 +408,9 @@ const Dashboard = () => {
                                 setError('');
                                 setLastRefresh(now);
                                 fetchCourses();
-                                fetchStudyLogs();
                             }}
                             disabled={loading}
-                            className="w-full flex items-center justify-start space-x-2 px-5 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
+                            className="w-full flex items-center justify-start space-x-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
                         >
                             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                             <span>{loading ? 'Refreshing...' : 'Refresh Data'}</span>
@@ -460,52 +420,49 @@ const Dashboard = () => {
                         </div>
                     </div>
 
-                    {/* Quick Actions */}
-                    <div className="mt-6">
-                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">QUICK ACTIONS</div>
-                        <button
-                            onClick={() => setIsAddCourseModalOpen(true)}
-                            className="w-full flex items-center space-x-3 px-3 py-2 bg-gradient-to-r from-indigo-400 to-blue-500 text-white font-medium rounded-lg  transition-all duration-300 border border-gray-300"
-                        >
-                            <Plus className="h-5 w-5" />
-                            <span>Add Course</span>
-                        </button>
+                    {/* Legal Links */}
+                    <div className="mb-6 pt-6 border-t border-gray-200">
+                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">LEGAL</div>
                         <Link
-                            to="/settings"
-                            className="flex items-center space-x-3 mt-6 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors "
+                            to="/terms-of-service"
+                            className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
                         >
-                            <Shield className="h-5 w-5" />
-                            <span>Settings</span>
+                            <FileText className="h-5 w-5" />
+                            <span>Terms of Service</span>
                         </Link>
+                        <Link
+                            to="/privacy-policy"
+                            className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                        >
+                            <Lock className="h-5 w-5" />
+                            <span>Privacy Policy</span>
+                        </Link>
+                    </div>
+
+                    {/* Logout Button */}
+                    <div className="mt-auto pt-6 border-t border-gray-200">
                         <button
                             onClick={() => {
                                 localStorage.removeItem('accessToken');
                                 window.location.href = '/';
                             }}
-                            className="flex items-center space-x-3 mt-6 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors w-full text-left"
+                            className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors w-full text-left"
                         >
                             <LogOut className="h-5 w-5" />
                             <span>Logout</span>
                         </button>
-                        <Link
-                            to="/courses"
-                            className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors mt-2"
-                        >
-                            <BookOpen className="h-5 w-5" />
-                            <span>View All Courses</span>
-                        </Link>
                     </div>
                 </div>
 
                 {/* Main Content */}
-                <div className="flex-1 p-4 sm:p-6 lg:p-8">
+                <div className="flex-1 p-4 sm:p-6 lg:p-8 lg:overflow-y-auto lg:h-screen">
                     {/* Stats Grid */}
                     <div id="stats" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
                         <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-100 shadow-sm">
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-xs sm:text-sm font-medium text-gray-600">Current GPA</p>
-                                    <p className="text-2xl sm:text-3xl font-bold text-gray-900">{currentGPA.toFixed(2)}</p>
+                                    <p className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">{currentGPA.toFixed(2)}</p>
                                 </div>
                                 <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center">
                                     <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-black" />
@@ -517,7 +474,7 @@ const Dashboard = () => {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-xs sm:text-sm font-medium text-gray-600">Credits Achieved</p>
-                                    <p className="text-2xl sm:text-3xl font-bold text-gray-900">{totalCredits}</p>
+                                    <p className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">{totalCredits}</p>
                                 </div>
                                 <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center">
                                     <BookOpen className="h-5 w-5 sm:h-6 sm:w-6 text-black" />
@@ -529,7 +486,7 @@ const Dashboard = () => {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-xs sm:text-sm font-medium text-gray-600">Total Courses</p>
-                                    <p className="text-2xl sm:text-3xl font-bold text-gray-900">{(courses || []).length}</p>
+                                    <p className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">{(courses || []).length}</p>
                                 </div>
                                 <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center">
                                     <Target className="h-5 w-5 sm:h-6 sm:w-6 text-black" />
@@ -541,7 +498,7 @@ const Dashboard = () => {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-xs sm:text-sm font-medium text-gray-600">Grade Scale</p>
-                                    <p className="text-2xl sm:text-3xl font-bold text-gray-900">{user?.gpaScale || '4.0'}</p>
+                                    <p className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">{user?.gpaScale || '4.0'}</p>
                                 </div>
                                 <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center">
                                     <Award className="h-5 w-5 sm:h-6 sm:w-6 text-black" />
@@ -623,7 +580,7 @@ const Dashboard = () => {
                                         };
                                     })}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-                                        <XAxis dataKey="name" angle={-45} textAnchor="end" height={60} />
+                                        <XAxis dataKey="name" angle={0} textAnchor="end" height={1} />
                                         <YAxis
                                             domain={[0, (dataMax) => {
                                                 const userScale = user?.gpaScale || '4.0';
@@ -649,27 +606,22 @@ const Dashboard = () => {
                                                 if (userScale === 'percentage') {
                                                     return [`${Math.round(value)}%`, 'Grade'];
                                                 }
-                                                return [value.toFixed(2), 'GPA'];
+                                                return [];
                                             }}
                                             labelFormatter={(label, payload) => {
                                                 if (payload && payload[0]) {
                                                     const courseData = payload[0].payload;
                                                     return (
                                                         <div>
-                                                            <div className="font-medium">{courseData.fullName}</div>
-                                                            <div className="text-sm text-gray-600">
+                                                            <div className="font-medium text-lg font-bold capitalize">{courseData.fullName}</div>
+                                                            <div className=" text-black">
                                                                 {courseData.originalGrade !== 'N/A' ? (
-                                                                    <>Grade: {courseData.originalGrade} ({courseData.gradeType})</>
+                                                                    <div className="text-md">Grade: {courseData.originalGrade} </div>
                                                                 ) : (
                                                                     <>No grade assigned yet</>
                                                                 )}
                                                             </div>
-                                                            <Link
-                                                                to={`/course/${courseData.courseId}`}
-                                                                className="text-blue-600 hover:text-blue-800 text-sm"
-                                                            >
-                                                                View Course Details
-                                                            </Link>
+
                                                         </div>
                                                     );
                                                 }
@@ -679,17 +631,17 @@ const Dashboard = () => {
                                         <Line
                                             type="monotone"
                                             dataKey="grade"
-                                            stroke="#8b5cf6"
+                                            stroke="#0328fc"
                                             strokeWidth={3}
-                                            dot={{ fill: '#8b5cf6', strokeWidth: 2, r: 6 }}
-                                            activeDot={{ r: 8, stroke: '#8b5cf6', strokeWidth: 2 }}
+                                            dot={{ fill: '#0328fc', strokeWidth: 2, r: 2 }}
+                                            activeDot={{ r: 2, stroke: '#0328fc', strokeWidth: 2 }}
                                         />
                                     </LineChart>
                                 </ResponsiveContainer>
                             ) : (
                                 <div className="text-center text-gray-500 py-12">
-                                    <BookOpen className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                                    <p>No courses with grades found</p>
+                                    <BookOpen className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                                    <p className="text-black text-sm">No courses with grades found</p>
                                     <p className="text-sm mt-2">Add courses and grades to see your performance overview</p>
                                 </div>
                             )}
@@ -732,22 +684,21 @@ const Dashboard = () => {
                                     <tbody className="bg-white divide-y divide-gray-200">
                                         {recentCourses.map((course) => {
                                             const displayGrade = course.gradeOverride !== undefined ? course.gradeOverride : course.grade || 'N/A';
-                                            const gradeColor = displayGrade !== 'N/A' ? getDisplayGradeColor(displayGrade) : 'bg-gray-100 text-gray-800';
 
                                             return (
-                                                <tr key={course._id} className="hover:bg-gray-50">
+                                                <tr key={course._id} className="">
                                                     <td className="px-3 py-4 whitespace-nowrap">
                                                         <div className="text-sm font-medium text-gray-900">
                                                             {course.name}
                                                         </div>
                                                     </td>
                                                     <td className="px-3 py-4 whitespace-nowrap">
-                                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${gradeColor}`}>
+                                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium `}>
                                                             {displayGrade}
                                                         </span>
                                                     </td>
-                                                    <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                        {course.credits} cr
+                                                    <td className="px-3 py-4 whitespace-nowrap text-sm self-center text-gray-900">
+                                                        {course.credits}
                                                     </td>
                                                     <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
                                                         {course.semester} {course.year}
@@ -797,7 +748,7 @@ const Dashboard = () => {
                                         type="number"
                                         value={predictionData.currentGrade}
                                         onChange={(e) => setPredictionData(prev => ({ ...prev, currentGrade: e.target.value }))}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2  focus:border-transparent"
                                         placeholder="85"
                                     />
                                 </div>
@@ -807,7 +758,7 @@ const Dashboard = () => {
                                         type="number"
                                         value={predictionData.finalWeight}
                                         onChange={(e) => setPredictionData(prev => ({ ...prev, finalWeight: e.target.value }))}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2  focus:border-transparent"
                                         placeholder="40"
                                     />
                                 </div>
@@ -823,7 +774,7 @@ const Dashboard = () => {
                                 </div>
                                 <button
                                     onClick={handleGradePrediction}
-                                    className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:shadow-lg transition-all duration-300"
+                                    className="w-full   bg-gradient-to-r from-blue-600 to-indigo-600 text-white border border-gray-300 hover:bg-gray-50 py-2 px-4 rounded-lg font-medium transition-all duration-300"
                                 >
                                     Calculate Required Final Grade
                                 </button>
@@ -877,7 +828,7 @@ const Dashboard = () => {
                                 </div>
                                 <button
                                     onClick={handleFinalGradeCalculation}
-                                    className="w-full bg-gradient-to-r from-green-600 to-emerald-600 text-white py-2 px-4 rounded-lg hover:shadow-lg transition-all duration-300"
+                                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white border border-gray-300 hover:bg-gray-50 py-2 px-4 rounded-lg font-medium transition-all duration-300"
                                 >
                                     Calculate Final Grade
                                 </button>
@@ -922,7 +873,7 @@ const Dashboard = () => {
                                 </div>
                             ) : (
                                 <div className="text-center text-gray-500 py-8">
-                                    <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                                    <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                                     <p>No upcoming deadlines found</p>
                                 </div>
                             )}
@@ -945,6 +896,9 @@ const Dashboard = () => {
                 onClose={() => setIsAddCourseModalOpen(false)}
                 onCourseAdded={handleCourseAdded}
             />
+
+            {/* Footer */}
+            <Footer />
         </div>
     );
 };

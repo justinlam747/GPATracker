@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
+import Footer from './Footer';
 import api from '../utils/api';
 import {
     Calendar as CalendarIcon,
@@ -13,7 +14,10 @@ import {
     Trash2,
     BarChart3,
     ArrowLeft,
-    Eye
+    Eye,
+    GraduationCap,
+    Menu,
+    X
 } from 'lucide-react';
 
 const Calendar = () => {
@@ -24,6 +28,7 @@ const Calendar = () => {
     const [deadlines, setDeadlines] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     useEffect(() => {
         fetchCourses();
@@ -248,126 +253,172 @@ const Calendar = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            {/* Header */}
-            <div className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="min-h-screen lg:h-screen bg-gray-50 lg:overflow-hidden">
+            {/* Mobile Header */}
+            <div className="lg:hidden bg-white border-b border-gray-200 p-4">
                 <div className="flex items-center justify-between">
-                    {/* Left side - Page Title */}
-                    <div className="flex items-center space-x-4">
-                        <div className="w-10 h-10  rounded-lg flex items-center justify-center">
+                    <div className="flex items-center space-x-2">
+                        <button
+                            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                            className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                        >
+                            <Menu className="h-5 w-5" />
+                        </button>
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center">
                             <CalendarIcon className="h-5 w-5 text-black" />
                         </div>
-                        <div>
-                            <h1 className="text-2xl font-bold text-gray-900">Academic Calendar</h1>
-                            <p className="text-sm text-gray-600">View and manage your upcoming deadlines</p>
+                        <span className="text-xl font-semibold text-gray-900">Calendar</span>
+                    </div>
+                    <Link
+                        to="/"
+                        className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                    >
+                        <ArrowLeft className="h-5 w-5" />
+                    </Link>
+                </div>
+            </div>
+
+            <div className="flex flex-col lg:flex-row lg:h-screen">
+                {/* Left Sidebar */}
+                <div className={`${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white border-b lg:border-b-0 lg:border-r border-gray-200 min-h-screen lg:min-h-full lg:max-h-screen lg:overflow-y-auto lg:sticky lg:top-0 p-4 lg:p-6 transition-transform duration-300 ease-in-out lg:transition-none flex flex-col`}>
+                    {/* Mobile Close Button */}
+                    <div className="lg:hidden flex items-center justify-between mb-6">
+                        <div className="flex items-center space-x-2">
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center">
+                                <GraduationCap className="h-5 w-5 text-black" />
+                            </div>
+                            <span className="text-xl font-semibold text-gray-900">GPAConnect</span>
+                        </div>
+                        <button
+                            onClick={() => setIsSidebarOpen(false)}
+                            className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                        >
+                            <X className="h-5 w-5" />
+                        </button>
+                    </div>
+
+                    {/* Logo - hidden on mobile since it's in the header */}
+                    <div className="hidden lg:flex items-center space-x-2 my-8">
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center">
+                            <GraduationCap className="h-5 w-5 text-black" />
+                        </div>
+                        <span className="text-xl font-semibold text-gray-900">GPAConnect</span>
+                    </div>
+
+                    {/* Page Title */}
+                    <div className="mb-6">
+                        <h1 className="text-lg font-bold text-gray-900">Academic Calendar</h1>
+                        <p className="text-sm text-gray-600">View and manage your upcoming deadlines</p>
+                    </div>
+
+                    {/* View Toggle */}
+                    <div className="">
+                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">VIEW OPTIONS</div>
+                        <div className="flex flex-col space-y-2">
+                            <button
+                                onClick={() => setView('calendar')}
+                                className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors  font-medium ${view === 'calendar'
+                                    ? 'bg-blue-50 text-gray-700'
+                                    : 'text-gray-600 hover:bg-gray-50'
+                                    }`}
+                            >
+                                <CalendarIcon className="h-4 w-4" />
+                                <span>Calendar View</span>
+                            </button>
+                            <button
+                                onClick={() => setView('list')}
+                                className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors  font-medium ${view === 'list'
+                                    ? 'bg-blue-50 text-gray-700'
+                                    : 'text-gray-600 hover:bg-gray-50'
+                                    }`}
+                            >
+                                <List className="h-4 w-4" />
+                                <span>List View</span>
+                            </button>
                         </div>
                     </div>
 
-                    {/* Right side - Navigation and Actions */}
-                    <div className="flex items-center space-x-4">
+                    <div className="mt-auto pt-6 border-t border-gray-200">
                         <Link
                             to="/"
-                            className="text-gray-600 hover:text-blue-600 transition-colors flex items-center space-x-2 text-sm font-medium"
+                            className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors w-full"
                         >
-                            <ArrowLeft className="h-4 w-4" />
-                            <span>Dashboard</span>
-                        </Link>
-                        <Link
-                            to="/courses"
-                            className="inline-flex items-center px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-md hover:shadow-lg transition-all duration-200"
-                        >
-                            <BookOpen className="h-4 w-4" />
-                          
+                            <ArrowLeft className="h-5 w-5" />
+                            <span>Back to Dashboard</span>
                         </Link>
                     </div>
                 </div>
-            </div>
 
-            <div className="max-w-7xl mx-auto px-6 py-6">
-                {/* View Toggle */}
-                <div className="mb-6">
-                    <div className="flex items-center space-x-2 bg-white p-1 rounded-lg border border-gray-200 w-fit">
-                        <button
-                            onClick={() => setView('calendar')}
-                            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${view === 'calendar'
-                                ? 'bg-blue-600 text-white'
-                                : 'text-gray-600 hover:text-gray-900'
-                                }`}
-                        >
-                            <CalendarIcon className="h-4 w-4 inline mr-2" />
-                            Calendar View
-                        </button>
-                        <button
-                            onClick={() => setView('list')}
-                            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${view === 'list'
-                                ? 'bg-blue-600 text-white'
-                                : 'text-gray-600 hover:text-gray-900'
-                                }`}
-                        >
-                            <List className="h-4 w-4 inline mr-2" />
-                            List View
-                        </button>
-                    </div>
-                </div>
+                {/* Overlay for mobile sidebar */}
+                {isSidebarOpen && (
+                    <div
+                        className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+                        onClick={() => setIsSidebarOpen(false)}
+                    />
+                )}
 
-                {/* Calendar View */}
-                {view === 'calendar' && (
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                        {/* Calendar Header */}
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-xl font-semibold text-gray-900">{getMonthName(currentDate)}</h2>
-                            <div className="flex items-center space-x-2">
-                                <button
-                                    onClick={previousMonth}
-                                    className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                                >
-                                    <ChevronLeft className="h-5 w-5" />
-                                </button>
-                                <button
-                                    onClick={() => setCurrentDate(new Date())}
-                                    className="px-3 py-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
-                                >
-                                    Today
-                                </button>
-                                <button
-                                    onClick={nextMonth}
-                                    className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                                >
-                                    <ChevronRight className="h-5 w-5" />
-                                </button>
+                {/* Main Content */}
+                <div className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+                    {/* Calendar View */}
+                    {view === 'calendar' && (
+                        <div className="rounded-xl shadow-sm border border-gray-200 p-6">
+                            {/* Calendar Header */}
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="text-xl font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 text-transparent bg-clip-text">{getMonthName(currentDate)}</h2>
+                                <div className="flex items-center space-x-2">
+                                    <button
+                                        onClick={previousMonth}
+                                        className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                                    >
+                                        <ChevronLeft className="h-5 w-5" />
+                                    </button>
+                                    <button
+                                        onClick={() => setCurrentDate(new Date())}
+                                        className="px-3 py-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                                    >
+                                        Today
+                                    </button>
+                                    <button
+                                        onClick={nextMonth}
+                                        className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                                    >
+                                        <ChevronRight className="h-5 w-5" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Calendar Grid */}
+                            <div className="grid grid-cols-7 gap-px bg-gray-200 rounded-lg overflow-hidden">
+                                {/* Day Headers */}
+                                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                                    <div key={day} className="bg-gray-50 p-3 text-center">
+                                        <div className="text-sm font-medium text-gray-700">{day}</div>
+                                    </div>
+                                ))}
+
+                                {/* Calendar Days */}
+                                {renderCalendarView()}
                             </div>
                         </div>
+                    )}
 
-                        {/* Calendar Grid */}
-                        <div className="grid grid-cols-7 gap-px bg-gray-200 rounded-lg overflow-hidden">
-                            {/* Day Headers */}
-                            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                                <div key={day} className="bg-gray-50 p-3 text-center">
-                                    <div className="text-sm font-medium text-gray-700">{day}</div>
-                                </div>
-                            ))}
-
-                            {/* Calendar Days */}
-                            {renderCalendarView()}
+                    {/* List View */}
+                    {view === 'list' && (
+                        <div className="rounded-xl shadow-sm border border-gray-200 p-6">
+                            <h2 className="text-xl font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 text-transparent bg-clip-text mb-6">Upcoming Deadlines</h2>
+                            {renderListView()}
                         </div>
-                    </div>
-                )}
+                    )}
 
-                {/* List View */}
-                {view === 'list' && (
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                        <h2 className="text-xl font-semibold text-gray-900 mb-6">Upcoming Deadlines</h2>
-                        {renderListView()}
-                    </div>
-                )}
-
-                {/* Error Display */}
-                {error && (
-                    <div className="mt-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-                        {error}
-                    </div>
-                )}
+                    {/* Error Display */}
+                    {error && (
+                        <div className="mt-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                            {error}
+                        </div>
+                    )}
+                </div>
             </div>
+
         </div>
     );
 };

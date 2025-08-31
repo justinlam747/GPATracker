@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { convertGPA, formatGPA } from '../utils/scaleConverter';
 import AddCourseModal from './AddCourseModal';
+import Footer from './Footer';
 import api from '../utils/api';
 import {
     BookOpen,
@@ -22,6 +23,8 @@ import {
     Grid3X3,
     List,
     X,
+    Menu,
+    Calendar,
 } from 'lucide-react';
 
 const Courses = () => {
@@ -35,6 +38,7 @@ const Courses = () => {
     const [showFilters, setShowFilters] = useState(false);
     const [isAddCourseModalOpen, setIsAddCourseModalOpen] = useState(false);
     const [viewMode, setViewMode] = useState('table'); // 'table' or 'grid'
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     useEffect(() => {
         fetchCourses();
@@ -60,22 +64,6 @@ const Courses = () => {
     const handleCourseAdded = (newCourse) => {
         setCourses((prev) => [newCourse, ...prev]);
         setError('');
-    };
-
-    const getLetterGrade = (course) => {
-        if (course.gradeOverride !== undefined) return course.gradeOverride;
-        if (course.gradePoints >= 4.0) return 'A+';
-        if (course.gradePoints >= 3.7) return 'A';
-        if (course.gradePoints >= 3.3) return 'A-';
-        if (course.gradePoints >= 3.0) return 'B+';
-        if (course.gradePoints >= 2.7) return 'B';
-        if (course.gradePoints >= 2.3) return 'B-';
-        if (course.gradePoints >= 2.0) return 'C+';
-        if (course.gradePoints >= 1.7) return 'C';
-        if (course.gradePoints >= 1.3) return 'C-';
-        if (course.gradePoints >= 1.0) return 'D+';
-        if (course.gradePoints >= 0.7) return 'D';
-        return 'F';
     };
 
     const getGradeColor = (grade) => {
@@ -166,44 +154,104 @@ const Courses = () => {
     }
 
     return (
-        <>
-            <div className="min-h-screen bg-gray-50">
-                {/* Header */}
-                <div className="bg-white border-b border-gray-200 px-6 py-4">
-                    <div className="flex items-center justify-between">
-                        {/* Left side - Page Title */}
-                        <div className="flex items-center space-x-4">
-                            <div className="w-10 h-10  rounded-lg flex items-center justify-center">
-                                <BookOpen className="h-5 w-5 text-black" />
+        <div className="min-h-screen">
+            {/* Mobile Header */}
+            <div className="lg:hidden bg-white border-b border-gray-200 p-4">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                        <button
+                            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                            className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                        >
+                            <Menu className="h-5 w-5" />
+                        </button>
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center ">
+                            <BookOpen className="h-5 w-5 text-black" />
+                        </div>
+                        <span className="text-xl font-semibold text-gray-900">Courses</span>
+                    </div>
+                    <Link
+                        to="/"
+                        className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                    >
+                        <ArrowLeft className="h-5 w-5" />
+                    </Link>
+                </div>
+            </div>
+
+            <div className="flex flex-col lg:flex-row lg:min-h-screen">
+                {/* Left Sidebar */}
+                <div className={`${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white border-b lg:border-b-0 lg:border-r border-gray-200 min-h-screen lg:min-h-full lg:max-h-screen lg:overflow-y-auto lg:sticky lg:top-0 p-4 lg:p-6 transition-transform duration-300 ease-in-out lg:transition-none flex flex-col`}>
+                    {/* Mobile Close Button */}
+                    <div className="lg:hidden flex items-center justify-between mb-6">
+                        <div className="flex items-center space-x-2">
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center ">
+                                <GraduationCap className="h-5 w-5 text-black" />
                             </div>
-                            <div>
-                                <h1 className="text-2xl font-bold text-gray-900">Courses</h1>
-                                <p className="text-sm text-gray-600">Manage your academic courses and track your progress</p>
+                            <span className="text-xl font-semibold text-gray-900">GPAConnect</span>
+                        </div>
+                        <button
+                            onClick={() => setIsSidebarOpen(false)}
+                            className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                        >
+                            <X className="h-5 w-5" />
+                        </button>
+                    </div>
+
+                    {/* Logo - hidden on mobile since it's in the header */}
+                    <div className="hidden lg:flex items-center space-x-2 my-8">
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center ">
+                            <GraduationCap className="h-5 w-5 text-black" />
+                        </div>
+                        <span className="text-xl font-semibold text-gray-900">GPAConnect</span>
+                    </div>
+                    <div className="mb-6">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-4">
+
+                                <div>
+                                    <h1 className="text-lg font-bold text-gray-900">Courses</h1>
+                                    <p className="text-sm text-gray-600">Manage your academic courses </p>
+                                </div>
                             </div>
                         </div>
+                    </div>
 
-                        {/* Right side - Navigation and Actions */}
-                        <div className="flex items-center space-x-4">
-                            <Link
-                                to="/"
-                                className="text-gray-600 hover:text-blue-600 transition-colors flex items-center space-x-2 text-sm font-medium"
-                            >
-                                <ArrowLeft className="h-4 w-4" />
-                                <span>Dashboard</span>
-                            </Link>
 
-                            <button
-                                onClick={() => setIsAddCourseModalOpen(true)}
-                                className="inline-flex items-center px-4 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-md hover:shadow-lg transition-all duration-200"
-                            >
-                                <Plus className="h-4 w-4 " />
-                                
-                            </button>
-                        </div>
+                    {/* Quick Actions */}
+                    <div className="">
+                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">QUICK ACTIONS</div>
+                        <button
+                            onClick={() => setIsAddCourseModalOpen(true)}
+                            className="w-full flex items-center space-x-3 px-3 py-2  bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white border border-gray-300 font-medium rounded-lg transition-all duration-300 hover:bg-gray-50"
+                        >
+                            <Plus className="h-5 w-5" />
+                            <span>Add Course</span>
+                        </button>
+                    </div>
+
+                    {/* Home Button - Bottom of Sidebar */}
+                    <div className="mt-auto pt-6 border-t border-gray-200">
+                        <Link
+                            to="/"
+                            className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors w-full"
+                        >
+                            <ArrowLeft className="h-5 w-5" />
+                            <span>Back to Dashboard</span>
+                        </Link>
                     </div>
                 </div>
 
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                {/* Overlay for mobile sidebar */}
+                {isSidebarOpen && (
+                    <div
+                        className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+                        onClick={() => setIsSidebarOpen(false)}
+                    />
+                )}
+
+                {/* Main Content */}
+                <div className="flex-1 p-4 sm:p-6 lg:p-8">
                     {/* Error Display */}
                     {error && (
                         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
@@ -343,15 +391,7 @@ const Courses = () => {
                                     ? 'Try adjusting your filters or search terms'
                                     : 'Get started by adding your first course'}
                             </p>
-                            {!searchTerm && filterSemester === 'all' && filterYear === 'all' && (
-                                <button
-                                    onClick={() => setIsAddCourseModalOpen(true)}
-                                    className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:shadow-lg transition-all duration-300"
-                                >
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    Add Course
-                                </button>
-                            )}
+
                         </div>
                     ) : (
                         <>
@@ -394,9 +434,6 @@ const Courses = () => {
                                                     <tr key={course._id} className="hover:bg-gray-50">
                                                         <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                                                             <div className="flex items-center">
-                                                                <div className="w-8 h-8 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center border border-blue-300">
-                                                                    <BookOpen className="h-4 w-4 text-blue-600" />
-                                                                </div>
                                                                 <div className="ml-3">
                                                                     <div className="text-sm font-medium text-gray-900">
                                                                         {course.name}
@@ -417,7 +454,7 @@ const Courses = () => {
                                                         </td>
                                                         <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                                                             <div className="flex items-center space-x-2">
-                                                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getGradeColor(course.gradeOverride !== undefined ? course.gradeOverride : course.grade)}`}>
+                                                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full `}>
                                                                     {course.gradeOverride !== undefined ? course.gradeOverride : course.grade}
                                                                 </span>
                                                                 {course.gradeOverride !== undefined && (
@@ -492,7 +529,9 @@ const Courses = () => {
                 onClose={() => setIsAddCourseModalOpen(false)}
                 onCourseAdded={handleCourseAdded}
             />
-        </>
+
+
+        </div>
     );
 };
 
@@ -500,9 +539,6 @@ const Courses = () => {
 const CourseCard = ({ course, getGradeColor, formatGradePoints, onView, onRevertOverride, onDelete }) => (
     <div className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-lg transition-shadow duration-200">
         <div className="flex items-start justify-between mb-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center border border-blue-300">
-                <BookOpen className="h-5 w-5 text-blue-600" />
-            </div>
             <div className="flex items-center space-x-1">
                 <button
                     onClick={onView}
@@ -569,13 +605,13 @@ const CourseCard = ({ course, getGradeColor, formatGradePoints, onView, onRevert
 
 // Small reusable stat card
 const StatCard = ({ label, value, Icon }) => (
-    <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-100 shadow-sm">
+    <div className=" bg-gradient-to-r from-blue-600 to-indigo-600 text-transparent bg-clip-text rounded-xl p-4 py-6 sm:p-6 border  border-gray-100 shadow-sm">
         <div className="flex items-center justify-between">
             <div>
                 <p className="text-xs sm:text-sm font-medium text-gray-600">{label}</p>
-                <p className="text-lg sm:text-2xl font-bold text-gray-900">{value}</p>
+                <p className="text-lg sm:text-2xl font-bold ">{value}</p>
             </div>
-            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center border border-gray-300">
+            <div className="w-10 h-10 sm:w-12 sm:h-12  rounded-lg flex items-center justify-center">
                 <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-gray-600" />
             </div>
         </div>

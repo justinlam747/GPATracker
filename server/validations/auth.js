@@ -8,12 +8,6 @@ const registerSchema = z.object({
         .trim()
         .regex(/^[a-zA-Z\s'-]+$/, 'First name contains invalid characters'),
 
-    lastName: z.string()
-        .min(1, 'Last name is required')
-        .max(50, 'Last name must be less than 50 characters')
-        .trim()
-        .regex(/^[a-zA-Z\s'-]+$/, 'Last name contains invalid characters'),
-
     email: z.string()
         .email('Please provide a valid email address')
         .min(5, 'Email must be at least 5 characters')

@@ -52,7 +52,7 @@ const userSchema = new mongoose.Schema({
     },
     lastName: {
         type: String,
-        required: true,
+        required: false,
         trim: true,
         maxlength: 50
     },
@@ -184,7 +184,7 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
 
 // Method to get user's full name
 userSchema.methods.getFullName = function () {
-    return `${this.firstName} ${this.lastName}`;
+    return this.lastName ? `${this.firstName} ${this.lastName}` : this.firstName;
 };
 
 // Method to check if account is locked

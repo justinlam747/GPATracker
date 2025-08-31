@@ -90,12 +90,7 @@ const LandingPage = () => {
             color: "from-blue-500 to-blue-700",
             bgColor: "from-blue-50 to-blue-100"
         },
-        {
-            name: "University of Alberta",
-            logo: "🏔️",
-            color: "from-green-600 to-green-800",
-            bgColor: "from-green-50 to-green-100"
-        },
+      
         {
             name: "Western University",
             logo: "🦁",
@@ -110,7 +105,7 @@ const LandingPage = () => {
         },
         {
             name: "University of Waterloo",
-            logo: "💧",
+            logo: "🇼",
             color: "from-cyan-600 to-cyan-800",
             bgColor: "from-cyan-50 to-cyan-100"
         },
@@ -139,7 +134,7 @@ const LandingPage = () => {
             bgColor: "from-red-50 to-red-100"
         },
         {
-            name: "Ryerson University",
+            name: "TMU",
             logo: "🎓",
             color: "from-blue-600 to-blue-800",
             bgColor: "from-blue-50 to-blue-100"
@@ -150,18 +145,9 @@ const LandingPage = () => {
             color: "from-green-600 to-green-800",
             bgColor: "from-green-50 to-green-100"
         },
-        {
-            name: "University of Windsor",
-            logo: "🌹",
-            color: "from-pink-600 to-pink-800",
-            bgColor: "from-pink-50 to-pink-100"
-        },
-        {
-            name: "University of Manitoba",
-            logo: "🐻",
-            color: "from-amber-600 to-amber-800",
-            bgColor: "from-amber-50 to-amber-100"
-        }
+       
+        
+        
     ];
 
     return (

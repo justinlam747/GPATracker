@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { BookOpen, Plus, User, LogOut, Settings, Home, Calendar } from 'lucide-react';
+import { BookOpen, Plus, User, LogOut, Home, Calendar } from 'lucide-react';
 
 const Navbar = () => {
     const { logout, user } = useAuth();
@@ -14,9 +14,6 @@ const Navbar = () => {
                 return 'Academic Dashboard';
             case '/courses':
                 return 'Courses';
-
-            case '/settings':
-                return 'Settings';
             case '/calendar':
                 return 'Calendar';
             case '/course':
@@ -60,11 +57,6 @@ const Navbar = () => {
                     <Link to="/calendar" className="text-gray-700 hover:text-blue-600 transition-colors flex items-center space-x-2">
                         <Calendar className="h-4 w-4" />
                         <span>Calendar</span>
-                    </Link>
-
-                    <Link to="/settings" className="text-gray-700 hover:text-blue-600 transition-colors flex items-center space-x-2">
-                        <Settings className="h-4 w-4" />
-                        <span>Settings</span>
                     </Link>
 
                     {/* User Menu */}

@@ -19,9 +19,20 @@ applySecurityMiddleware(app);
 app.use(morgan('combined'));
 
 // Database connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/gpa-tracker')
-    .then(() => console.log('Connected to MongoDB'))
-    .catch(err => console.error('MongoDB connection error:', err));
+const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/gpa-tracker';
+console.log('Attempting to connect to MongoDB...');
+console.log('Connection string:', mongoUri.replace(/\/\/([^:]+):([^@]+)@/, '//$1:****@')); // Hide password
+
+mongoose.connect(mongoUri)
+    .then(() => console.log('✅ Connected to MongoDB successfully'))
+    .catch(err => {
+        console.error('❌ MongoDB connection error:', err.message);
+        console.error('Please check:');
+        console.error('1. MongoDB Atlas cluster is running');
+        console.error('2. Database user credentials are correct');
+        console.error('3. IP whitelist includes your IP');
+        console.error('4. Connection string is valid');
+    });
 
 // Routes
 app.use('/api/auth', authRoutes);
