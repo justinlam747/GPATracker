@@ -33,7 +33,7 @@ import {
 } from 'recharts';
 
 const Dashboard = () => {
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
     const [courses, setCourses] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -442,10 +442,7 @@ const Dashboard = () => {
                     {/* Logout Button */}
                     <div className="mt-auto pt-6 border-t border-gray-200">
                         <button
-                            onClick={() => {
-                                localStorage.removeItem('accessToken');
-                                window.location.href = '/';
-                            }}
+                            onClick={logout}
                             className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors w-full text-left"
                         >
                             <LogOut className="h-5 w-5" />

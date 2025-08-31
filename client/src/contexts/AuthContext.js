@@ -135,9 +135,23 @@ export const AuthProvider = ({ children }) => {
     };
 
     const logout = () => {
+        console.log('=== LOGOUT START ===');
+
+        // Clear all auth-related data
         localStorage.removeItem('token');
+        localStorage.removeItem('cachedUser');
+        localStorage.removeItem('lastTokenValidation');
+
+        // Clear API headers
         delete api.defaults.headers.common['Authorization'];
+
+        // Reset user state
         setUser(null);
+
+        // Force navigation to home page
+        window.location.href = '/';
+
+        console.log('=== LOGOUT COMPLETE ===');
     };
 
     const updateUser = (updatedUser) => {

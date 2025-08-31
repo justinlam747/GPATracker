@@ -3,7 +3,7 @@ import axios from 'axios';
 const api = axios.create({
     baseURL: process.env.REACT_APP_API_URL || (
         process.env.NODE_ENV === 'production'
-            ? 'https://gpa-tracker-iryg.onrender.com/api'  // Point to your Render backend
+            ? 'https://gpaconnect.me/api'  // Point to your new backend
             : 'http://localhost:5000/api'
     ),
     headers: {

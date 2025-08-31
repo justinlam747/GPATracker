@@ -46,10 +46,8 @@ const ForgotPassword = () => {
                         </div>
 
                         {/* Success Message */}
-                        <div className="text-center">
-                            <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-full bg-green-100 mb-6">
-                                <Mail className="h-8 w-8 text-green-600" />
-                            </div>
+                        <div className="text-start">
+
                             <h2 className="text-2xl font-bold text-gray-900 mb-2">
                                 Check your email
                             </h2>
@@ -59,7 +57,7 @@ const ForgotPassword = () => {
                             <div className="space-y-4">
                                 <Link
                                     to="/login"
-                                    className="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-all duration-200"
+                                    className="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-blue-600 to-pink-600 hover:from-blue-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-all duration-200"
                                 >
                                     Back to login
                                 </Link>
@@ -145,7 +143,7 @@ const ForgotPassword = () => {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-black hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                                className="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-blue-600 to-pink-600 hover:from-blue-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                             >
                                 {loading ? (
                                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
@@ -158,7 +156,7 @@ const ForgotPassword = () => {
 
                     {/* Links */}
                     <div className="mt-6">
-                        <div className="text-center">
+                        <div className="text-start">
                             <span className="text-sm text-gray-600">
                                 Remember your password?{' '}
                                 <Link
@@ -175,7 +173,7 @@ const ForgotPassword = () => {
 
             {/* Right Side - Image (Hidden on mobile) */}
             <div className="hidden lg:block relative flex-1">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-400 via-purple-500 to-red-500">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-400 via-pink-300 to-pink-500">
                     <div className="absolute inset-0 bg-black opacity-20"></div>
                     <div className="absolute bottom-4 right-4 text-white text-sm opacity-100">
                         <span>GPAConnect</span>
