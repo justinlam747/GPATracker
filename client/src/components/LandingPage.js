@@ -11,7 +11,6 @@ import {
     Zap,
     ArrowRight,
     CheckCircle,
-    Star,
     GraduationCap,
     LogOut,
     X
@@ -71,84 +70,7 @@ const LandingPage = () => {
         }
     ];
 
-    const partnerLogos = [
-        {
-            name: "University of Toronto",
-            logo: "🏛️",
-            color: "from-blue-600 to-blue-800",
-            bgColor: "from-blue-50 to-blue-100"
-        },
-        {
-            name: "McGill University",
-            logo: "🍁",
-            color: "from-red-600 to-red-800",
-            bgColor: "from-red-50 to-red-100"
-        },
-        {
-            name: "UBC",
-            logo: "🌊",
-            color: "from-blue-500 to-blue-700",
-            bgColor: "from-blue-50 to-blue-100"
-        },
-      
-        {
-            name: "Western University",
-            logo: "🦁",
-            color: "from-purple-600 to-purple-800",
-            bgColor: "from-purple-50 to-purple-100"
-        },
-        {
-            name: "Queen's University",
-            logo: "👑",
-            color: "from-yellow-600 to-yellow-800",
-            bgColor: "from-yellow-50 to-yellow-100"
-        },
-        {
-            name: "University of Waterloo",
-            logo: "🇼",
-            color: "from-cyan-600 to-cyan-800",
-            bgColor: "from-cyan-50 to-cyan-100"
-        },
-        {
-            name: "McMaster University",
-            logo: "🔬",
-            color: "from-indigo-600 to-indigo-800",
-            bgColor: "from-indigo-50 to-indigo-100"
-        },
-        {
-            name: "University of Ottawa",
-            logo: "🏛️",
-            color: "from-red-500 to-red-700",
-            bgColor: "from-red-50 to-red-100"
-        },
-        {
-            name: "Carleton University",
-            logo: "🦅",
-            color: "from-orange-600 to-orange-800",
-            bgColor: "from-orange-50 to-orange-100"
-        },
-        {
-            name: "York University",
-            logo: "🦁",
-            color: "from-red-600 to-red-800",
-            bgColor: "from-red-50 to-red-100"
-        },
-        {
-            name: "TMU",
-            logo: "🎓",
-            color: "from-blue-600 to-blue-800",
-            bgColor: "from-blue-50 to-blue-100"
-        },
-        {
-            name: "University of Guelph",
-            logo: "🐄",
-            color: "from-green-600 to-green-800",
-            bgColor: "from-green-50 to-green-100"
-        },
-       
-        
-        
-    ];
+    // Removed unused partnerLogos array
 
     return (
         <div className="min-h-screen bg-white">
@@ -342,37 +264,47 @@ const LandingPage = () => {
             )}
 
             <main>
-                {/* Hero with checkered background */}
-                <section className="relative py-12 sm:py-16 md:py-20 overflow-hidden text-center" aria-labelledby="hero-title">
-                    {/* Soft glow with noise effect */}
-                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(59,130,246,0.15)_0%,_transparent_70%)] [mask-image:url('data:image/svg+xml,%3Csvg%20width%3D%22100%25%22%20height%3D%22100%25%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cdefs%3E%3Cfilter%20id%3D%22noise%22%3E%3CfeTurbulence%20type%3D%22fractalNoise%22%20baseFrequency%3D%220.65%22%20numOctaves%3D%223%22%20stitchTiles%3D%22stitch%22/%3E%3CfeColorMatrix%20type%3D%22matrix%22%20values%3D%221%200%200%200%200%200%201%200%200%200%200%200%201%200%200%200%200%200%200%200.1%200%22/%3E%3C/filter%3E%3C/defs%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20filter%3D%22url%28%23noise%29%22%20opacity%3D%220.3%22/%3E%3C/svg%3E')]"></div>
-                    <div className="absolute inset-0 bg-[linear-gradient(to_right,#f0f0f0_1px,transparent_1px),linear-gradient(to_bottom,#f0f0f0_1px,transparent_1px)] bg-[size:2rem_2rem] sm:bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_80%_50%_at_50%_0%,#000_70%,transparent_110%)]"></div>
+                {/* Hero with soft gradient background */}
+                <section className="relative py-16 sm:py-20 md:py-24 lg:py-32 overflow-hidden text-center bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50/20" aria-labelledby="hero-title">
+                    {/* Soft gradient overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-50/10 via-transparent to-indigo-50/10"></div>
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(59,130,246,0.03)_0%,_rgba(99,102,241,0.02)_50%,_transparent_70%)]"></div>
 
-                    <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className={`inline-flex items-center px-3 py-1 rounded-full bg-blue-100 text-blue-800 text-xs font-medium mb-6 sm:mb-8 transition ${animate ? 'opacity-100' : 'opacity-0'}`}>
-                            <Zap className="h-3 w-3 mr-2" />
+                    <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-12">
+                        <div className={`inline-flex items-center px-3 sm:px-4 py-2 rounded-full bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 text-xs sm:text-sm font-medium mb-6 sm:mb-8 md:mb-12 transition ${animate ? 'opacity-100' : 'opacity-0'}`}>
+                            <Zap className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                             BETA
                         </div>
 
-                        <h1 id="hero-title" className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 sm:mb-6 leading-tight px-4">
-                            GPA Calculator & Academic Progress Tracker
-                        </h1>
-                        <p className="text-lg sm:text-xl text-gray-600 mb-6 sm:mb-8 max-w-3xl mx-auto px-4">
+                        <h1
+  id="hero-title"
+  className="
+    font-bold text-slate-900 tracking-tight
+    text-5xl xs:text-5xl sm:text-[5rem] md:text-[6rem] lg:text-[6rem] xl:text-[10rem]
+    leading-[1.1] sm:leading-[1.05] md:leading-[1.03]
+    mb-4 sm:mb-6 md:mb-8 lg:mb-10
+    px-2
+  "
+>
+  GPAConnect!
+</h1>
+
+                        <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-slate-600 mb-8 sm:mb-10 md:mb-12 max-w-4xl mx-auto px-2 leading-relaxed">
                             GPAConnect helps students track GPA in real-time, predict grades, and manage courses with ease.
                         </p>
 
-                        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center px-4">
+                        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 md:gap-6 justify-center px-2">
                             {!isAuthenticated ? (
                                 <>
                                     <Link
                                         to="/register"
-                                        className="px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-lg shadow-lg hover:shadow-xl"
+                                        className="w-full sm:w-auto px-6 sm:px-8 md:px-10 py-3 sm:py-4 md:py-5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 text-sm sm:text-base md:text-lg"
                                     >
-                                        Start GPA Tracking <ArrowRight className="ml-2 h-5 w-5 inline" />
+                                        Start GPA Tracking <ArrowRight className="ml-1 sm:ml-2 h-4 w-4 sm:h-5 sm:w-5 inline" />
                                     </Link>
                                     <Link
                                         to="/login"
-                                        className="px-8 py-4 border-2 border-gray-300 text-gray-700 font-semibold rounded-lg hover:border-blue-600 hover:text-blue-600"
+                                        className="w-full sm:w-auto px-6 sm:px-8 md:px-10 py-3 sm:py-4 md:py-5 border border-blue-300 text-blue-700 font-semibold rounded-xl hover:border-indigo-400 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 transition-all duration-300 text-sm sm:text-base md:text-lg"
                                     >
                                         Sign In
                                     </Link>
@@ -380,7 +312,7 @@ const LandingPage = () => {
                             ) : (
                                 <Link
                                     to="/courses"
-                                    className="px-8 py-4 border-2 border-blue-600 text-blue-600 font-semibold rounded-lg hover:bg-blue-50"
+                                    className="w-full sm:w-auto px-6 sm:px-8 md:px-10 py-3 sm:py-4 md:py-5 border-2 border-blue-600 text-blue-600 font-semibold rounded-xl hover:bg-blue-50 text-sm sm:text-base md:text-lg"
                                 >
                                     View My GPA Tracker
                                 </Link>
@@ -388,140 +320,93 @@ const LandingPage = () => {
                         </div>
                     </div>
 
-                    {/* Floating stat circles */}
-                    <div className="absolute top-8 left-4 sm:top-20 sm:left-10">
-                        <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full flex items-center justify-center text-white font-semibold text-xs sm:text-sm">
+                    {/* Floating stat circles with animation - hidden on mobile for better UX */}
+                    <div className="hidden sm:block absolute top-12 left-8 sm:top-24 sm:left-16 animate-float-slow">
+                        <div className="w-10 h-10 sm:w-14 sm:h-14 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white font-semibold text-sm sm:text-base shadow-xl animate-pulse-slow">
                             A+
                         </div>
                     </div>
-                    <div className="absolute top-16 right-4 sm:top-32 sm:right-20">
-                        <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center text-white font-semibold text-xs sm:text-sm">
+                    <div className="hidden sm:block absolute top-20 right-8 sm:top-40 sm:right-24 animate-float-medium">
+                        <div className="w-10 h-10 sm:w-14 sm:h-14 bg-gradient-to-r from-indigo-500 to-blue-600 rounded-full flex items-center justify-center text-white font-semibold text-sm sm:text-base shadow-xl animate-bounce-slow">
                             4.0
                         </div>
                     </div>
-                    <div className="absolute top-24 left-16 sm:top-48 sm:left-32">
-                        <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center text-white font-semibold text-xs sm:text-sm">
+                    <div className="hidden sm:block absolute top-32 left-24 sm:top-56 sm:left-40 animate-float-fast">
+                        <div className="w-10 h-10 sm:w-14 sm:h-14 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full flex items-center justify-center text-white font-semibold text-sm sm:text-base shadow-xl animate-pulse-medium">
                             95%
                         </div>
                     </div>
-                    <div className="absolute top-20 right-16 sm:top-36 sm:right-48">
-                        <div className="w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center text-white font-semibold text-xs sm:text-sm">
+                    <div className="hidden sm:block absolute top-24 right-24 sm:top-44 sm:right-56 animate-float-reverse">
+                        <div className="w-10 h-10 sm:w-14 sm:h-14 bg-gradient-to-r from-indigo-400 to-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-sm sm:text-base shadow-xl animate-spin-slow">
                             A
                         </div>
                     </div>
                 </section>
 
-                {/* University Carousel */}
-                <section className="relative py-12 sm:py-16 bg-white overflow-hidden">
-                    {/* Soft glow with noise effect */}
-                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(99,102,241,0.1)_0%,_transparent_70%)] [mask-image:url('data:image/svg+xml,%3Csvg%20width%3D%22100%25%22%20height%3D%22100%25%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cdefs%3E%3Cfilter%20id%3D%22noise%22%3E%3CfeTurbulence%20type%3D%22fractalNoise%22%20baseFrequency%3D%220.8%22%20numOctaves%3D%222%22%20stitchTiles%3D%22stitch%22/%3E%3CfeColorMatrix%20type%3D%22matrix%22%20values%3D%221%200%200%200%200%200%201%200%200%200%200%200%201%200%200%200%200%200%200%200.08%200%22/%3E%3C/filter%3E%3C/defs%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20filter%3D%22url%28%23noise%29%22%20opacity%3D%220.4%22/%3E%3C/svg%3E')]"></div>
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="text-center mb-8 sm:mb-12">
-                            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3 sm:mb-4 px-4">
-                                Trusted by Students at Top Universities
-                            </h2>
-                            <p className="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto px-4">
-                                Join thousands of students from leading institutions who trust GPAConnect for their academic success
-                            </p>
-                        </div>
-
-                        <div className="relative overflow-hidden">
-                            {/* Gradient overlays for smooth fade effect */}
-                            <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-white to-transparent z-10"></div>
-                            <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-white to-transparent z-10"></div>
-
-                            {/* Container to center the carousel */}
-                            <div className="flex justify-center">
-                                {/* Infinite scrolling carousel with 3 sets for seamless loop */}
-                                <div className="flex animate-scroll">
-                                    {/* First set of universities */}
-                                    {partnerLogos.map((university, index) => (
-                                        <div key={`first-${index}`} className="flex-shrink-0 mx-2 sm:mx-4">
-                                            <div className={`w-36 h-24 sm:w-48 sm:h-32 bg-gradient-to-br ${university.bgColor} rounded-xl sm:rounded-2xl flex flex-col items-center justify-center border border-gray-200 shadow-sm hover:shadow-lg hover:scale-105 transition-all duration-300 group`}>
-                                                <div className={`w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br ${university.color} rounded-full flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform duration-300 text-lg sm:text-2xl`}>
-                                                    {university.logo}
-                                                </div>
-                                                <span className="text-xs sm:text-sm font-semibold text-gray-700 text-center px-2 sm:px-3 leading-tight">
-                                                    {university.name}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    ))}
-
-                                    {/* Second set for seamless loop */}
-                                    {partnerLogos.map((university, index) => (
-                                        <div key={`second-${index}`} className="flex-shrink-0 mx-2 sm:mx-4">
-                                            <div className={`w-36 h-24 sm:w-48 sm:h-32 bg-gradient-to-br ${university.bgColor} rounded-xl sm:rounded-2xl flex flex-col items-center justify-center border border-gray-200 shadow-sm hover:shadow-lg hover:scale-105 transition-all duration-300 group`}>
-                                                <div className={`w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br ${university.color} rounded-full flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform duration-300 text-lg sm:text-2xl`}>
-                                                    {university.logo}
-                                                </div>
-                                                <span className="text-xs sm:text-sm font-semibold text-gray-700 text-center px-2 sm:px-3 leading-tight">
-                                                    {university.name}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    ))}
-
-                                    {/* Third set for seamless loop */}
-                                    {partnerLogos.map((university, index) => (
-                                        <div key={`third-${index}`} className="flex-shrink-0 mx-2 sm:mx-4">
-                                            <div className={`w-36 h-24 sm:w-48 sm:h-32 bg-gradient-to-br ${university.bgColor} rounded-xl sm:rounded-2xl flex flex-col items-center justify-center border border-gray-200 shadow-sm hover:shadow-lg hover:scale-105 transition-all duration-300 group`}>
-                                                <div className={`w-8 h-8 sm:w-12 sm:h-12 bg-gradient-to-br ${university.color} rounded-full flex items-center justify-center mb-2 sm:mb-3 group-hover:scale-110 transition-transform duration-300 text-lg sm:text-2xl`}>
-                                                    {university.logo}
-                                                </div>
-                                                <span className="text-xs sm:text-sm font-semibold text-gray-700 text-center px-2 sm:px-3 leading-tight">
-                                                    {university.name}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
+              
 
                 {/* Features */}
-                <section id="features" className="relative py-16 sm:py-20 bg-gray-50" aria-labelledby="features-title">
-                    {/* Soft glow with noise effect */}
-                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(34,197,94,0.08)_0%,_transparent_70%)] [mask-image:url('data:image/svg+xml,%3Csvg%20width%3D%22100%25%22%20height%3D%22100%25%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cdefs%3E%3Cfilter%20id%3D%22noise%22%3E%3CfeTurbulence%20type%3D%22fractalNoise%22%20baseFrequency%3D%220.7%22%20numOctaves%3D%223%22%20stitchTiles%3D%22stitch%22/%3E%3CfeColorMatrix%20type%3D%22matrix%22%20values%3D%221%200%200%200%200%200%201%200%200%200%200%200%201%200%200%200%200%200%200%200.12%200%22/%3E%3C/filter%3E%3C/defs%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20filter%3D%22url%28%23noise%29%22%20opacity%3D%220.35%22/%3E%3C/svg%3E')]"></div>
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                        <h2 id="features-title" className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4 px-4">
-                            GPA Tracking Features
-                        </h2>
-                        <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto mb-12 sm:mb-16 px-4">
-                            Tools to calculate GPA, track courses, and predict final grades.
-                        </p>
+                <section
+  id="features"
+  className="relative py-20 sm:py-24 bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50/20"
+  aria-labelledby="features-title"
+>
+  {/* Soft gradient overlay */}
+  <div className="absolute inset-0 bg-gradient-to-br from-blue-50/10 via-transparent to-indigo-50/10"></div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 text-start px-4">
-                            {features.map((feature, index) => (
-                                <article key={index} className="p-6 sm:p-8 rounded-xl sm:rounded-2xl bg-white border border-gray-100 hover:shadow-md hover:-translate-y-1 transition-all duration-500">
-                                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg sm:rounded-xl flex items-center justify-center hover:scale-110 transition-all duration-500 text-white mb-4 sm:mb-6">
-                                        {feature.icon}
-                                    </div>
-                                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-3">{feature.title}</h3>
-                                    <p className="text-gray-600 text-xs sm:text-sm">{feature.description}</p>
-                                </article>
-                            ))}
-                        </div>
-                    </div>
+   <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-12 text-center">
+     <h2
+       id="features-title"
+       className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-4 sm:mb-6 md:mb-8 px-2"
+     >
+       GPA Tracking Features
+     </h2>
+
+     <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-slate-600 max-w-3xl mx-auto mb-12 sm:mb-16 md:mb-20 px-2 leading-relaxed">
+       Tools to calculate GPA, track courses, and predict final grades.
+     </p>
+     <div className="relative z-10 [mask-image:linear-gradient(to_top,transparent,black_15%,black)] [mask-repeat:no-repeat] [mask-size:100%_100%]">
+     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 md:gap-10 text-start px-2">
+       {features.map((feature, index) => (
+         <article
+           key={index}
+           className="group relative p-6 sm:p-8 md:p-10 rounded-2xl sm:rounded-3xl bg-white/95 backdrop-blur-sm border border-slate-200 hover:shadow-xl hover:-translate-y-2 transition-all duration-500 hover:bg-white hover:border-gray-200 overflow-hidden"
+         >
+           {/* Content wrapper with mask-image */}
+          
+             <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl sm:rounded-2xl flex items-center justify-center group-hover:scale-110 transition-all duration-500 text-white mb-4 sm:mb-6 md:mb-8 shadow-lg">
+               {feature.icon}
+             </div>
+             <h3 className="text-base sm:text-lg md:text-xl font-semibold text-slate-900 mb-3 sm:mb-4 md:mb-6">
+               {feature.title}
+             </h3>
+             <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
+               {feature.description}
+             </p>
+          
+         </article>
+       ))}
+     </div>
+     </div>
+   </div>
                 </section>
+
             </main>
-            <section id="how-it-works" className="relative py-16 sm:py-20 bg-white">
-                {/* Soft glow with noise effect */}
-                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(168,85,247,0.1)_0%,_transparent_70%)] [mask-image:url('data:image/svg+xml,%3Csvg%20width%3D%22100%25%22%20height%3D%22100%25%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cdefs%3E%3Cfilter%20id%3D%22noise%22%3E%3CfeTurbulence%20type%3D%22fractalNoise%22%20baseFrequency%3D%220.6%22%20numOctaves%3D%222%22%20stitchTiles%3D%22stitch%22/%3E%3CfeColorMatrix%20type%3D%22matrix%22%20values%3D%221%200%200%200%200%200%201%200%200%200%200%200%200%200%200%201%200%200%200%200%200%200.1%22/%3E%3C/filter%3E%3C/defs%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20filter%3D%22url%28%23noise%29%22%20opacity%3D%220.25%22/%3E%3C/svg%3E')]"></div>
+            <section id="how-it-works" className="relative py-12 sm:py-16 md:py-20 bg-gradient-to-br from-slate-50 via-blue-50/20 to-indigo-50/20">
+                {/* Soft gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-50/10 via-transparent to-indigo-50/10"></div>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-16 items-center">
-                        <div className="px-4">
-                            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-4 sm:mb-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 md:gap-16 items-center">
+                        <div className="px-2 sm:px-4">
+                            <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-3 sm:mb-4 md:mb-6">
                                 How It Helps You Excel
                             </h2>
-                            <p className="text-base sm:text-lg text-gray-600 mb-6 sm:mb-8 leading-relaxed">
+                            <p className="text-sm sm:text-base md:text-lg text-slate-600 mb-4 sm:mb-6 md:mb-8 leading-relaxed">
                                 Our GPA tracker isn't just about numbers—it's about empowering you
                                 to make informed decisions about your education and future.
                             </p>
 
-                            <div className="space-y-4">
+                            <div className="space-y-3 sm:space-y-4">
                                 {[
                                     "Stay motivated with visual progress tracking",
                                     "Identify areas for improvement",
@@ -529,44 +414,44 @@ const LandingPage = () => {
                                     "Celebrate your achievements",
                                     "Make informed decisions about course loads",
                                 ].map((benefit, index) => (
-                                    <div key={index} className="flex items-center space-x-3">
-                                        <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
-                                        <span className="text-gray-700">{benefit}</span>
+                                    <div key={index} className="flex items-center space-x-2 sm:space-x-3">
+                                        <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5 text-blue-500 flex-shrink-0" />
+                                        <span className="text-sm sm:text-base text-slate-700">{benefit}</span>
                                     </div>
                                 ))}
                             </div>
                         </div>
 
                         {/* Mock Dashboard Preview */}
-                        <div className="relative">
-                            <div className="bg-white rounded-2xl shadow-2xl p-6 transform rotate-3 hover:rotate-0 transition-transform duration-500 border border-gray-200">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h3 className="font-semibold text-gray-900">Academic Dashboard</h3>
-                                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                        <div className="relative mt-8 lg:mt-0">
+                            <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-2xl p-4 sm:p-6 transform rotate-3 hover:rotate-0 transition-transform duration-500 border border-slate-200">
+                                <div className="flex items-center justify-between mb-3 sm:mb-4">
+                                    <h3 className="text-sm sm:text-base font-semibold text-slate-900">Academic Dashboard</h3>
+                                    <div className="w-2 h-2 sm:w-3 sm:h-3 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full"></div>
                                 </div>
-                                <div className="space-y-3">
-                                    <div className="h-3 bg-blue-200 rounded-full w-3/4"></div>
-                                    <div className="h-3 bg-indigo-200 rounded-full w-1/2"></div>
-                                    <div className="h-3 bg-blue-200 rounded-full w-5/6"></div>
+                                <div className="space-y-2 sm:space-y-3">
+                                    <div className="h-2 sm:h-3 bg-gradient-to-r from-blue-200 to-indigo-200 rounded-full w-3/4"></div>
+                                    <div className="h-2 sm:h-3 bg-gradient-to-r from-blue-300 to-indigo-300 rounded-full w-1/2"></div>
+                                    <div className="h-2 sm:h-3 bg-gradient-to-r from-blue-200 to-indigo-200 rounded-full w-5/6"></div>
                                 </div>
-                                <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                                    <div className="text-2xl font-bold text-blue-600">3.85</div>
-                                    <div className="text-sm text-blue-600">Current GPA</div>
-                                </div>
-                            </div>
-
-                            {/* Floating Stats */}
-                            <div className="absolute -top-4 -right-4 bg-white rounded-xl shadow-lg p-4 transform -rotate-12 hover:rotate-0 transition-transform duration-500 border border-gray-200">
-                                <div className="text-center">
-                                    <div className="text-2xl font-bold text-green-600">+0.15</div>
-                                    <div className="text-sm text-gray-600">GPA Boost</div>
+                                <div className="mt-3 sm:mt-4 p-2 sm:p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg">
+                                    <div className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">3.85</div>
+                                    <div className="text-xs sm:text-sm text-blue-600">Current GPA</div>
                                 </div>
                             </div>
 
-                            <div className="absolute -bottom-4 -left-4 bg-white rounded-xl shadow-lg p-4 transform rotate-12 hover:rotate-0 transition-transform duration-500 border border-gray-200">
+                            {/* Floating Stats - hidden on mobile for better UX */}
+                            <div className="hidden sm:block absolute -top-4 -right-4 bg-white/90 backdrop-blur-sm rounded-xl shadow-lg p-3 sm:p-4 transform -rotate-12 hover:rotate-0 transition-transform duration-500 border border-slate-200">
                                 <div className="text-center">
-                                    <div className="text-2xl font-bold text-indigo-600">12</div>
-                                    <div className="text-sm text-gray-600">Courses</div>
+                                    <div className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">+0.15</div>
+                                    <div className="text-xs sm:text-sm text-blue-600">GPA Boost</div>
+                                </div>
+                            </div>
+
+                            <div className="hidden sm:block absolute -bottom-4 -left-4 bg-white/90 backdrop-blur-sm rounded-xl shadow-lg p-3 sm:p-4 transform rotate-12 hover:rotate-0 transition-transform duration-500 border border-slate-200">
+                                <div className="text-center">
+                                    <div className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">12</div>
+                                    <div className="text-xs sm:text-sm text-indigo-600">Courses</div>
                                 </div>
                             </div>
                         </div>
@@ -575,24 +460,25 @@ const LandingPage = () => {
             </section>
 
             {/* Footer */}
-            <footer className="relative bg-gray-900 text-white py-8 sm:py-12" aria-label="Footer">
-                {/* Soft glow with noise effect */}
-                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(59,130,246,0.08)_0%,_transparent_70%)] [mask-image:url('data:image/svg+xml,%3Csvg%20width%3D%22100%25%22%20height%3D%22100%25%22%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%3E%3Cdefs%3E%3Cfilter%20id%3D%22noise%22%3E%3CfeTurbulence%20type%3D%22fractalNoise%22%20baseFrequency%3D%220.9%22%20numOctaves%3D%222%22%20stitchTiles%3D%22stitch%22/%3E%3CfeColorMatrix%20type%3D%22matrix%22%20values%3D%221%200%200%200%200%200%201%200%200%200%200%200%200%200%200%201%200%200%200%200%200%200.06%22/%3E%3C/filter%3E%3C/defs%3E%3Crect%20width%3D%22100%25%22%20height%3D%22100%25%22%20filter%3D%22url%28%23noise%29%22%20opacity%3D%220.3%22/%3E%3C/svg%3E')]"></div>
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                    <div className="flex items-center justify-center mb-4 sm:mb-6">
-                        <GraduationCap className="h-6 w-6 sm:h-8 sm:w-8 text-blue-400 mr-2 sm:mr-3" />
-                        <span className="text-xl sm:text-2xl font-bold">GPAConnect</span>
+            <footer className="relative bg-slate-900 text-white py-12 sm:py-16 md:py-20" aria-label="Footer">
+                {/* Soft gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-blue-900/20 to-indigo-900/20"></div>
+                <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-12 text-center relative">
+                    <div className="flex items-center justify-center mb-6 sm:mb-8 md:mb-10">
+                        <GraduationCap className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10 text-blue-400 mr-2 sm:mr-3 md:mr-4" />
+                        <span className="text-xl sm:text-2xl md:text-3xl font-bold">GPAConnect</span>
                     </div>
-                    <p className="text-gray-400 mb-4 sm:mb-6 text-sm sm:text-base px-4">
+                    <p className="text-slate-400 mb-6 sm:mb-8 md:mb-10 text-sm sm:text-base md:text-lg lg:text-xl px-2 max-w-2xl mx-auto">
                         Empowering students to achieve academic excellence with our GPA calculator and progress tracker.
                     </p>
-                    <div className="flex flex-col sm:flex-row justify-center space-y-2 sm:space-y-0 sm:space-x-6 text-gray-400 text-xs sm:text-sm">
-                        <a href="/privacy" className="hover:text-white transition-colors">Privacy Policy</a>
-                        <a href="/terms" className="hover:text-white transition-colors">Terms of Service</a>
-                        <a href="/support" className="hover:text-white transition-colors">Support</a>
+                    <div className="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-6 md:space-x-8 text-slate-400 text-xs sm:text-sm md:text-base">
+                        <a href="/privacy-policy" className="hover:text-blue-400 transition-colors">Privacy Policy</a>
+                        <a href="/terms-of-service" className="hover:text-blue-400 transition-colors">Terms of Service</a>
+                      
                     </div>
                 </div>
             </footer>
+            
         </div>
     );
 };

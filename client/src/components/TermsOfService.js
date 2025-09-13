@@ -16,7 +16,7 @@ const TermsOfService = () => {
                             <ArrowLeft className="h-5 w-5" />
                         </Link>
                         <div className="flex items-center space-x-3">
-                            <Shield className="h-8 w-8 text-blue-600" />
+                            <Shield className="h-8 w-8 text-slate-600" />
                             <div>
                                 <h1 className="text-2xl font-bold text-gray-900">Terms of Service</h1>
                                 <p className="text-sm text-gray-600">Last updated: {new Date().toLocaleDateString()}</p>
