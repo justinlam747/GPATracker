@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import Footer from './Footer';
 import { useAuth } from '../contexts/AuthContext';
 import { Helmet } from 'react-helmet-async';
 import {
@@ -120,21 +121,45 @@ const LandingPage = () => {
                         </button>
 
                         {/* Desktop Nav */}
-                        <nav className="hidden md:flex items-center space-x-8 text-sm text-gray-600" aria-label="Main navigation">
-                            <button
-                                onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
-                                className="hover:text-blue-600 transition-colors cursor-pointer px-3 py-2 rounded-md hover:bg-gray-50"
-                            >
-                                Features
-                            </button>
-                            <button
-                                onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })}
-                                className="hover:text-blue-600 transition-colors cursor-pointer px-3 py-2 rounded-md hover:bg-gray-50"
-                            >
-                                How It Works
-                            </button>
+                        <nav
+  className="hidden md:flex items-center space-x-8 text-sm text-gray-600"
+  aria-label="Main navigation"
+>
+  <button
+    onClick={() =>
+      document.getElementById("features")?.scrollIntoView({ behavior: "smooth" })
+    }
+    className="hover:text-blue-600 transition-colors cursor-pointer px-3 py-2 rounded-md hover:bg-gray-50"
+  >
+    Features
+  </button>
 
-                        </nav>
+  <button
+    onClick={() =>
+      document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })
+    }
+    className="hover:text-blue-600 transition-colors cursor-pointer px-3 py-2 rounded-md hover:bg-gray-50"
+  >
+    How It Works
+  </button>
+
+  {/* Privacy Policy Link */}
+  <a
+    href="/privacy-policy"
+    className="hover:text-blue-600 transition-colors px-3 py-2 rounded-md hover:bg-gray-50"
+  >
+    Privacy Policy
+  </a>
+
+  {/* Terms of Service Link */}
+  <a
+    href="/terms-of-service"
+    className="hover:text-blue-600 transition-colors px-3 py-2 rounded-md hover:bg-gray-50"
+  >
+    Terms of Service
+  </a>
+</nav>
+
 
                         {/* Auth */}
                         <div className="hidden sm:flex items-center space-x-4">
@@ -459,25 +484,8 @@ const LandingPage = () => {
                 </div>
             </section>
 
-            {/* Footer */}
-            <footer className="relative bg-slate-900 text-white py-12 sm:py-16 md:py-20" aria-label="Footer">
-                {/* Soft gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-blue-900/20 to-indigo-900/20"></div>
-                <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-12 text-center relative">
-                    <div className="flex items-center justify-center mb-6 sm:mb-8 md:mb-10">
-                        <GraduationCap className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10 text-blue-400 mr-2 sm:mr-3 md:mr-4" />
-                        <span className="text-xl sm:text-2xl md:text-3xl font-bold">GPAConnect</span>
-                    </div>
-                    <p className="text-slate-400 mb-6 sm:mb-8 md:mb-10 text-sm sm:text-base md:text-lg lg:text-xl px-2 max-w-2xl mx-auto">
-                        Empowering students to achieve academic excellence with our GPA calculator and progress tracker.
-                    </p>
-                    <div className="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-6 md:space-x-8 text-slate-400 text-xs sm:text-sm md:text-base">
-                        <a href="/privacy-policy" className="hover:text-blue-400 transition-colors">Privacy Policy</a>
-                        <a href="/terms-of-service" className="hover:text-blue-400 transition-colors">Terms of Service</a>
-                      
-                    </div>
-                </div>
-            </footer>
+
+          
             
         </div>
     );

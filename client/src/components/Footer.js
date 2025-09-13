@@ -24,30 +24,7 @@ const Footer = () => {
                         </p>
                     </div>
 
-                    {/* Quick Links */}
-                    <div>
-                        <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">
-                            Quick Links
-                        </h3>
-                        <ul className="space-y-2">
-                            <li>
-                                <Link to="/" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
-                                    Dashboard
-                                </Link>
-                            </li>
-                            <li>
-                                <Link to="/courses" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
-                                    Courses
-                                </Link>
-                            </li>
-                            <li>
-                                <Link to="/calendar" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">
-                                    Calendar
-                                </Link>
-                            </li>
-                        </ul>
-                    </div>
-
+                    
                     {/* Legal */}
                     <div>
                         <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">
@@ -80,7 +57,7 @@ const Footer = () => {
                 <div className="mt-8 pt-8 border-t border-gray-200">
                     <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
                         <div className="flex items-center space-x-6 text-xs text-gray-500">
-                            <span>Made with ❤️ for students</span>
+                            <span>Made for students</span>
                             <span>•</span>
                             <span>Educational tool only</span>
                             <span>•</span>
