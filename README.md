@@ -4,14 +4,14 @@ A modern, full-stack GPA tracking application with authentication, database stor
 
 ## Features
 
-- 🔐 **User Authentication**: Secure login/registration with JWT tokens
-- 📊 **GPA Tracking**: Add, edit, and manage courses with automatic GPA calculation
-- 📱 **Responsive Design**: Works seamlessly across all devices
-- 🎯 **Multiple GPA Scales**: Support for 4.0, 5.0, and 10.0 GPA scales
-- 📈 **Visual Analytics**: Charts and graphs showing GPA trends over time
-- 🏫 **Academic Organization**: Categorize courses by subject area
-- 🔄 **Real-time Sync**: Data automatically syncs across all devices
-- 🎨 **Modern UI**: Beautiful, intuitive interface built with Tailwind CSS
+- **User Authentication**: Secure login/registration with JWT tokens
+- **GPA Tracking**: Add, edit, and manage courses with automatic GPA calculation
+- **Responsive Design**: Works seamlessly across all devices
+- **Multiple GPA Scales**: Support for 4.0, 5.0, and 10.0 GPA scales
+- **Visual Analytics**: Charts and graphs showing GPA trends over time
+- **Academic Organization**: Categorize courses by subject area
+- **Real-time Sync**: Data automatically syncs across all devices
+- **Modern UI**: Beautiful, intuitive interface built with Tailwind CSS
 
 ## Tech Stack
 
@@ -40,4 +40,3 @@ This project is licensed under the MIT License.
 
 ---
 
-**Built with ❤️ for students and educators**
