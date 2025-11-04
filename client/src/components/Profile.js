@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { User, Mail, GraduationCap, Calendar, Save, Eye, EyeOff } from 'lucide-react';
+import { User, Mail, GraduationCap, Calendar, Save, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 
 const Profile = () => {
     const { user, updateProfile } = useAuth();
@@ -124,7 +125,7 @@ const Profile = () => {
                 <div className="flex items-center justify-between">
                     {/* Left side - Page Title */}
                     <div className="flex items-center space-x-4">
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
+                        <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
                             <User className="h-5 w-5 text-white" />
                         </div>
                         <div>
@@ -294,7 +295,32 @@ const Profile = () => {
                                         />
                                     </div>
                                 </div>
+                            </div>
 
+                            <div>
+                                <label htmlFor="gpaScale" className="block text-sm font-medium text-gray-700 mb-2">
+                                    GPA Scale
+                                </label>
+                                <div className="relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <GraduationCap className="h-5 w-5 text-gray-400" />
+                                    </div>
+                                    <select
+                                        id="gpaScale"
+                                        name="gpaScale"
+                                        value={profileData.gpaScale}
+                                        onChange={handleProfileChange}
+                                        className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                    >
+                                        <option value="4.0">4.0 Scale (Standard)</option>
+                                        <option value="4.3">4.3 Scale (A+ = 4.3)</option>
+                                        <option value="letter">Letter Grades (A, B, C, etc.)</option>
+                                        <option value="percentage">Percentage (0-100)</option>
+                                    </select>
+                                </div>
+                                <p className="mt-1 text-sm text-gray-500">
+                                    Choose how you want to see your GPA displayed. Assignments will always be in percentage.
+                                </p>
                             </div>
 
                             <div className="flex justify-end">

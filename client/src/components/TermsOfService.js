@@ -30,10 +30,10 @@ const TermsOfService = () => {
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
                     {/* Legal Disclaimer */}
-                    <div className="mb-8 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div className="mb-8 p-4 bg-gray-50 border border-gray-300 rounded-lg">
                         <div className="flex items-start space-x-3">
-                            <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
-                            <div className="text-sm text-amber-800">
+                            <AlertTriangle className="h-5 w-5 text-gray-700 mt-0.5 flex-shrink-0" />
+                            <div className="text-sm text-gray-900">
                                 <p className="font-medium">Legal Notice</p>
                                 <p className="mt-1">
                                     This application is provided "as is" without warranties of any kind.

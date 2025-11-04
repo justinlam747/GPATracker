@@ -32,7 +32,7 @@ const Navbar = () => {
             <div className="flex items-center justify-between">
                 {/* Left side - Page Title */}
                 <div className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
+                    <div className="w-10 h-10 bg-honolulu_blue rounded-lg flex items-center justify-center">
                         <BookOpen className="h-5 w-5 text-white" />
                     </div>
                     <div>
@@ -45,15 +45,15 @@ const Navbar = () => {
 
                 {/* Right side - Navigation Links */}
                 <div className="flex items-center space-x-6">
-                    <Link to="/" className="text-gray-700 hover:text-blue-600 transition-colors flex items-center space-x-2">
+                    <Link to="/" className="text-gray-700 hover:text-honolulu_blue transition-colors flex items-center space-x-2">
                         <Home className="h-4 w-4" />
                         <span>Dashboard</span>
                     </Link>
-                    <Link to="/courses" className="text-gray-700 hover:text-blue-600 transition-colors flex items-center space-x-2">
+                    <Link to="/courses" className="text-gray-700 hover:text-honolulu_blue transition-colors flex items-center space-x-2">
                         <BookOpen className="h-4 w-4" />
                         <span>Courses</span>
                     </Link>
-                    <Link to="/calendar" className="text-gray-700 hover:text-blue-600 transition-colors flex items-center space-x-2">
+                    <Link to="/calendar" className="text-gray-700 hover:text-honolulu_blue transition-colors flex items-center space-x-2">
                         <Calendar className="h-4 w-4" />
                         <span>Calendar</span>
                     </Link>

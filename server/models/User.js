@@ -69,7 +69,7 @@ const userSchema = new mongoose.Schema({
     gpaScale: {
         type: String,
         default: '4.0',
-        enum: ['4.0', '4.3', 'percentage']
+        enum: ['4.0', '4.3', 'letter', 'percentage']
     },
     isActive: {
         type: Boolean,

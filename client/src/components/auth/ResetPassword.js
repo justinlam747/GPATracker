@@ -126,7 +126,7 @@ const ResetPassword = () => {
 
                 {/* Right Side - Image (Hidden on mobile) */}
                 <div className="hidden lg:block relative flex-1">
-                    <div className="absolute inset-0 bg-gradient-to-br from-blue-400 via-purple-500 to-red-500">
+                    <div className="absolute inset-0 bg-blue-400">
                         <div className="absolute inset-0 bg-black opacity-20"></div>
                         <div className="absolute bottom-4 right-4 text-white text-sm opacity-100">
                             <span>GPAConnect</span>
@@ -171,7 +171,7 @@ const ResetPassword = () => {
 
                 {/* Right Side - Image (Hidden on mobile) */}
                 <div className="hidden lg:block relative flex-1">
-                    <div className="absolute inset-0 bg-gradient-to-br from-blue-400 via-purple-500 to-red-500">
+                    <div className="absolute inset-0 bg-blue-400">
                         <div className="absolute inset-0 bg-black opacity-20"></div>
                         <div className="absolute bottom-4 right-4 text-white text-sm opacity-100">
                             <span>GPAConnect</span>
@@ -303,7 +303,7 @@ const ResetPassword = () => {
 
             {/* Right Side - Image (Hidden on mobile) */}
             <div className="hidden lg:block relative flex-1">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-400 via-purple-500 to-red-500">
+                <div className="absolute inset-0 bg-blue-400">
                     <div className="absolute inset-0 bg-black opacity-20"></div>
                     <div className="absolute bottom-4 right-4 text-white text-sm opacity-100">
                         <span>GPAConnect</span>

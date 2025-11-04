@@ -17,7 +17,9 @@ import {
     Eye,
     GraduationCap,
     Menu,
-    X
+    X,
+    Settings,
+    User
 } from 'lucide-react';
 
 const Calendar = () => {
@@ -129,7 +131,7 @@ const Calendar = () => {
             case 'project':
                 return 'bg-purple-100 text-purple-800 border-purple-200';
             case 'participation':
-                return 'bg-blue-100 text-blue-800 border-blue-200';
+                return 'bg-vivid_sky_blue-100 text-vivid_sky_blue-900 border-vivid_sky_blue-200';
             default:
                 return 'bg-gray-100 text-gray-800 border-gray-200';
         }
@@ -166,8 +168,8 @@ const Calendar = () => {
             const isToday = date.toDateString() === new Date().toDateString();
 
             days.push(
-                <div key={day} className={`bg-white p-3 min-h-[120px] ${isToday ? 'bg-blue-50 border-2 border-blue-200' : ''}`}>
-                    <div className={`text-sm font-medium mb-2 ${isToday ? 'text-blue-600' : 'text-gray-900'}`}>
+                <div key={day} className={`bg-white p-3 min-h-[120px] ${isToday ? 'bg-vivid_sky_blue-100 border-2 border-vivid_sky_blue-200' : ''}`}>
+                    <div className={`text-sm font-medium mb-2 ${isToday ? 'text-honolulu_blue' : 'text-gray-900'}`}>
                         {day}
                     </div>
                     <div className="space-y-1">
@@ -232,7 +234,7 @@ const Calendar = () => {
                             </div>
                             <Link
                                 to={`/course/${deadline.courseId}`}
-                                className="p-2 text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
+                                className="p-2 text-gray-400 hover:text-honolulu_blue rounded-lg hover:bg-vivid_sky_blue-100 transition-colors"
                                 title="View Course"
                             >
                                 <Eye className="h-4 w-4" />
@@ -247,7 +249,7 @@ const Calendar = () => {
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
-                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600"></div>
+                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-honolulu_blue"></div>
             </div>
         );
     }
@@ -305,20 +307,51 @@ const Calendar = () => {
                         <span className="text-xl font-semibold text-gray-900">GPAConnect</span>
                     </div>
 
-                    {/* Page Title */}
-                    <div className="mb-6">
-                        <h1 className="text-lg font-bold text-gray-900">Academic Calendar</h1>
-                        <p className="text-sm text-gray-600">View and manage your upcoming deadlines</p>
-                    </div>
+                    {/* Navigation */}
+                    <nav className="space-y-2 mb-6">
+                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">NAVIGATION</div>
+                        <Link
+                            to="/"
+                            className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                        >
+                            <BarChart3 className="h-5 w-5" />
+                            <span>Dashboard</span>
+                        </Link>
+                        <Link
+                            to="/courses"
+                            className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                        >
+                            <BookOpen className="h-5 w-5" />
+                            <span>Courses</span>
+                        </Link>
+                        <div className="flex items-center space-x-3 px-3 py-2 bg-blue-50 text-black rounded-lg">
+                            <CalendarIcon className="h-5 w-5" />
+                            <span>Calendar</span>
+                        </div>
+                        <Link
+                            to="/settings"
+                            className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                        >
+                            <Settings className="h-5 w-5" />
+                            <span>GPA Settings</span>
+                        </Link>
+                        <Link
+                            to="/account"
+                            className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                        >
+                            <User className="h-5 w-5" />
+                            <span>Account</span>
+                        </Link>
+                    </nav>
 
                     {/* View Toggle */}
-                    <div className="">
+                    <div className="mb-6">
                         <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">VIEW OPTIONS</div>
                         <div className="flex flex-col space-y-2">
                             <button
                                 onClick={() => setView('calendar')}
-                                className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors  font-medium ${view === 'calendar'
-                                    ? 'bg-blue-50 text-gray-700'
+                                className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${view === 'calendar'
+                                    ? 'bg-blue-50 text-black'
                                     : 'text-gray-600 hover:bg-gray-50'
                                     }`}
                             >
@@ -327,8 +360,8 @@ const Calendar = () => {
                             </button>
                             <button
                                 onClick={() => setView('list')}
-                                className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors  font-medium ${view === 'list'
-                                    ? 'bg-blue-50 text-gray-700'
+                                className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${view === 'list'
+                                    ? 'bg-blue-50 text-black'
                                     : 'text-gray-600 hover:bg-gray-50'
                                     }`}
                             >
@@ -364,7 +397,7 @@ const Calendar = () => {
                         <div className="rounded-xl shadow-sm border border-gray-200 p-6">
                             {/* Calendar Header */}
                             <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-xl font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 text-transparent bg-clip-text">{getMonthName(currentDate)}</h2>
+                                <h2 className="text-xl font-semibold text-honolulu_blue">{getMonthName(currentDate)}</h2>
                                 <div className="flex items-center space-x-2">
                                     <button
                                         onClick={previousMonth}
@@ -374,7 +407,7 @@ const Calendar = () => {
                                     </button>
                                     <button
                                         onClick={() => setCurrentDate(new Date())}
-                                        className="px-3 py-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                                        className="px-3 py-2 text-sm text-honolulu_blue hover:text-blue_green font-medium"
                                     >
                                         Today
                                     </button>
@@ -405,7 +438,7 @@ const Calendar = () => {
                     {/* List View */}
                     {view === 'list' && (
                         <div className="rounded-xl shadow-sm border border-gray-200 p-6">
-                            <h2 className="text-xl font-semibold bg-gradient-to-r from-blue-600 to-indigo-600 text-transparent bg-clip-text mb-6">Upcoming Deadlines</h2>
+                            <h2 className="text-xl font-semibold text-honolulu_blue mb-6">Upcoming Deadlines</h2>
                             {renderListView()}
                         </div>
                     )}

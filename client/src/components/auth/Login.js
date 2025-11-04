@@ -131,7 +131,7 @@ const Login = () => {
                                     required
                                     value={formData.email}
                                     onChange={handleChange}
-                                    className="w-full pl-10 pr-3 py-3 border text-md border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-colors"
+                                    className="w-full pl-10 pr-3 py-3 border text-md border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-honolulu_blue focus:border-transparent transition-colors"
                                     placeholder="Your Email"
                                 />
                             </div>
@@ -150,7 +150,7 @@ const Login = () => {
                                     required
                                     value={formData.password}
                                     onChange={handleChange}
-                                    className="w-full pl-10 pr-10 py-3 border text-md border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-colors"
+                                    className="w-full pl-10 pr-10 py-3 border text-md border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-honolulu_blue focus:border-transparent transition-colors"
                                     placeholder="Your Password"
                                 />
                                 <button
@@ -171,7 +171,7 @@ const Login = () => {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                                className="w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-honolulu_blue hover:bg-blue_green focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-honolulu_blue disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                             >
                                 {loading ? (
                                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
@@ -187,7 +187,7 @@ const Login = () => {
                         <div className="text-start">
                             <Link
                                 to="/forgot-password"
-                                className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                                className="text-sm text-honolulu_blue hover:text-blue_green transition-colors"
                             >
                                 Forgot password?
                             </Link>
@@ -197,7 +197,7 @@ const Login = () => {
                                 Don't have an account?{' '}
                                 <Link
                                     to="/register"
-                                    className="font-medium bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent hover:from-blue-700 hover:to-indigo-700 transition-all duration-200"
+                                    className="font-medium text-honolulu_blue hover:text-blue_green transition-all duration-200"
                                 >
                                     Sign up
                                 </Link>
@@ -209,7 +209,7 @@ const Login = () => {
 
             {/* Right Side - Image (Hidden on mobile) */}
             <div className="hidden lg:block relative flex-1">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-400 via-purple-100 to-blue-800">
+                <div className="absolute inset-0 bg-honolulu_blue">
                     <div className="absolute inset-0 bg-black opacity-20"></div>
                     <div className="absolute bottom-4 right-4 text-white text-sm opacity-100">
                         <span>GPAConnect</span>

@@ -11,6 +11,8 @@ import Register from './components/auth/Register';
 import ForgotPassword from './components/auth/ForgotPassword';
 import ResetPassword from './components/auth/ResetPassword';
 import Calendar from './components/Calendar';
+import Settings from './components/Settings';
+import AccountSettings from './components/AccountSettings';
 import TermsOfService from './components/TermsOfService';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import AppLayout from './components/AppLayout';
@@ -74,6 +76,26 @@ function App() {
                                 <ProtectedRoute>
                                     <AppLayout showNavbar={false}>
                                         <Calendar />
+                                    </AppLayout>
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/settings"
+                            element={
+                                <ProtectedRoute>
+                                    <AppLayout showNavbar={false}>
+                                        <Settings />
+                                    </AppLayout>
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/account"
+                            element={
+                                <ProtectedRoute>
+                                    <AppLayout showNavbar={false}>
+                                        <AccountSettings />
                                     </AppLayout>
                                 </ProtectedRoute>
                             }

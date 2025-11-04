@@ -125,7 +125,7 @@ const CourseForm = () => {
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
-                <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+                <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-honolulu_blue"></div>
             </div>
         );
     }
@@ -142,8 +142,8 @@ const CourseForm = () => {
                 </button>
 
                 <div className="flex items-center space-x-3">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                        <BookOpen className="h-6 w-6 text-blue-600" />
+                    <div className="p-2 bg-vivid_sky_blue-100 rounded-lg">
+                        <BookOpen className="h-6 w-6 text-honolulu_blue" />
                     </div>
                     <div>
                         <h1 className="text-2xl font-bold text-gray-900">
@@ -175,7 +175,7 @@ const CourseForm = () => {
                                 name="name"
                                 value={formData.name}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-honolulu_blue focus:border-honolulu_blue"
                                 placeholder="e.g., Introduction to Computer Science"
                                 required
                             />
@@ -191,7 +191,7 @@ const CourseForm = () => {
                                 name="code"
                                 value={formData.code}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-honolulu_blue focus:border-honolulu_blue"
                                 placeholder="e.g., CS101"
                             />
                         </div>
@@ -211,7 +211,7 @@ const CourseForm = () => {
                                 min="0.5"
                                 max="10"
                                 step="0.5"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-honolulu_blue focus:border-honolulu_blue"
                                 placeholder="3.0"
                                 required
                             />
@@ -226,7 +226,7 @@ const CourseForm = () => {
                                 name="grade"
                                 value={formData.grade}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-honolulu_blue focus:border-honolulu_blue"
                             >
                                 <option value="">Select a grade (optional)</option>
                                 {grades.map(grade => (
@@ -249,7 +249,7 @@ const CourseForm = () => {
                                 name="semester"
                                 value={formData.semester}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-honolulu_blue focus:border-honolulu_blue"
                                 required
                             >
                                 <option value="">Select semester</option>
@@ -271,7 +271,7 @@ const CourseForm = () => {
                                 onChange={handleChange}
                                 min="2000"
                                 max="2030"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-honolulu_blue focus:border-honolulu_blue"
                                 placeholder="2024"
                                 required
                             />
@@ -287,7 +287,7 @@ const CourseForm = () => {
                             name="category"
                             value={formData.category}
                             onChange={handleChange}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-honolulu_blue focus:border-honolulu_blue"
                         >
                             {categories.map(category => (
                                 <option key={category} value={category}>{category}</option>
@@ -305,7 +305,7 @@ const CourseForm = () => {
                             value={formData.notes}
                             onChange={handleChange}
                             rows="3"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-honolulu_blue focus:border-honolulu_blue"
                             placeholder="Any additional notes about this course..."
                         />
                     </div>
@@ -321,7 +321,7 @@ const CourseForm = () => {
                         <button
                             type="submit"
                             disabled={saving}
-                            className="inline-flex items-center px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="inline-flex items-center px-6 py-2 bg-honolulu_blue text-white rounded-md hover:bg-blue_green focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-honolulu_blue disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <Save className="h-4 w-4 mr-2" />
                             {saving ? 'Saving...' : (isEditing ? 'Update Course' : 'Add Course')}

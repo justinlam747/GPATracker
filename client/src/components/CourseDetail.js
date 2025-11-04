@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Plus, Edit, Trash2, X, BookOpen, Award, ArrowLeft, GraduationCap, Menu } from 'lucide-react';
+import { Plus, Edit, Trash2, X, BookOpen, Award, ArrowLeft, GraduationCap, Menu, BarChart3, Calendar, Settings, User } from 'lucide-react';
 import Footer from './Footer';
 import api from '../utils/api';
 import { Link } from 'react-router-dom';
@@ -238,30 +238,56 @@ const CourseDetail = () => {
                         <span className="text-xl font-semibold text-gray-900">GPAConnect</span>
                     </div>
 
-                    {/* Page Title */}
-                    <div className="mb-6">
-                        <h1 className="text-lg font-bold text-gray-900">{course.name}</h1>
-                        <p className="text-sm text-gray-600">Course Details & Assignments</p>
-                    </div>
+                    {/* Navigation */}
+                    <nav className="space-y-2 mb-6">
+                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">NAVIGATION</div>
+                        <Link
+                            to="/"
+                            className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                        >
+                            <BarChart3 className="h-5 w-5" />
+                            <span>Dashboard</span>
+                        </Link>
+                        <Link
+                            to="/courses"
+                            className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                        >
+                            <BookOpen className="h-5 w-5" />
+                            <span>Courses</span>
+                        </Link>
+                        <Link
+                            to="/calendar"
+                            className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                        >
+                            <Calendar className="h-5 w-5" />
+                            <span>Calendar</span>
+                        </Link>
+                        <Link
+                            to="/settings"
+                            className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                        >
+                            <Settings className="h-5 w-5" />
+                            <span>GPA Settings</span>
+                        </Link>
+                        <Link
+                            to="/account"
+                            className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                        >
+                            <User className="h-5 w-5" />
+                            <span>Account</span>
+                        </Link>
+                    </nav>
 
                     {/* Quick Actions */}
-                    <div className="">
+                    <div className="mb-6">
                         <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">QUICK ACTIONS</div>
                         <button
                             onClick={() => setShowAssignmentForm(true)}
-                            className="w-full flex items-center space-x-3 px-3 py-2 text-white font-medium bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700  border hover:bg-gray-50 rounded-lg transition-all duration-300 border border-gray-300"
+                            className="w-full flex items-center space-x-3 px-3 py-2 bg-honolulu_blue hover:bg-blue_green text-white font-medium rounded-lg transition-colors"
                         >
                             <Plus className="h-5 w-5" />
                             <span>Add Assignment</span>
                         </button>
-
-                        <Link
-                            to="/courses"
-                            className="w-full mt-3 flex items-center space-x-3 px-3 py-2 text-gray-600  font-medium   border hover:bg-gray-50 rounded-lg transition-all duration-300 border border-gray-300"
-                        >
-                            <ArrowLeft className="h-5 w-5" />
-                            <span>Courses</span>
-                        </Link>
                     </div>
 
                     <div className="mt-auto pt-6 border-t border-gray-200">
@@ -317,7 +343,7 @@ const CourseDetail = () => {
                                 <div>
                                     <h3 className="text-lg font-medium text-gray-900">Final Grade</h3>
                                     <div className="flex items-center space-x-4 mt-2">
-                                        <span className="text-2xl font-bold  bg-gradient-to-r from-blue-600 to-indigo-600 text-transparent bg-clip-text">
+                                        <span className="text-2xl font-bold  text-blue-600">
                                             {finalGrade ? finalGrade.grade : 'N/A'}
                                         </span>
                                         {finalGrade && (
@@ -447,7 +473,7 @@ const CourseDetail = () => {
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="bg-gray-50 rounded-lg p-4">
                                     <h4 className="text-sm font-medium text-gray-600">Average Grade</h4>
-                                    <p className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 text-transparent bg-clip-text">
+                                    <p className="text-2xl font-bold text-blue-600">
                                         {(() => {
                                             const totalGrade = course.assignments.reduce((sum, assignment) => {
                                                 const grade = typeof assignment.grade === 'number' ? assignment.grade :
@@ -460,13 +486,13 @@ const CourseDetail = () => {
                                 </div>
                                 <div className="bg-gray-50 rounded-lg p-4">
                                     <h4 className="text-sm font-medium text-gray-600">Total Weight</h4>
-                                    <p className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 text-transparent bg-clip-text">
+                                    <p className="text-2xl font-bold text-blue-600">
                                         {course.assignments.reduce((sum, assignment) => sum + (assignment.weight || 0), 0)}%
                                     </p>
                                 </div>
                                 <div className="bg-gray-50 rounded-lg p-4">
                                     <h4 className="text-sm font-medium text-gray-600">Assignments</h4>
-                                    <p className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 text-transparent bg-clip-text">
+                                    <p className="text-2xl font-bold text-blue-600">
                                         {course.assignments.length}
                                     </p>
                                 </div>

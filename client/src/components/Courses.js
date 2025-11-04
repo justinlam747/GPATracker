@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { convertGPA, formatGPA } from '../utils/scaleConverter';
+import { percentageToGPA, formatGPA, getLetterGrade } from '../utils/scaleConverter';
 import AddCourseModal from './AddCourseModal';
 import Footer from './Footer';
 import api from '../utils/api';
@@ -25,6 +25,9 @@ import {
     X,
     Menu,
     Calendar,
+    BarChart3,
+    Settings,
+    User
 } from 'lucide-react';
 
 const Courses = () => {
@@ -68,7 +71,7 @@ const Courses = () => {
 
     const getGradeColor = (grade) => {
         if (grade.includes('A')) return 'bg-green-100 text-green-800';
-        if (grade.includes('B')) return 'bg-blue-100 text-blue-800';
+        if (grade.includes('B')) return 'bg-vivid_sky_blue-100 text-vivid_sky_blue-900';
         if (grade.includes('C')) return 'bg-yellow-100 text-yellow-800';
         if (grade.includes('D')) return 'bg-orange-100 text-orange-800';
         return 'bg-red-100 text-red-800';
@@ -76,13 +79,10 @@ const Courses = () => {
 
     const formatGradePoints = (course) => {
         const userScale = user?.gpaScale || '4.0';
-        if (course.gradeOverride !== undefined) {
-            return formatGPA(
-                convertGPA(course.gradePoints || 0, '4.0', userScale),
-                userScale
-            );
-        }
-        return formatGPA(course.gradePoints || 0, userScale);
+        // Course grades should be in percentage, convert to user's scale
+        const percentage = course.calculatedGrade || course.grade || 0;
+        const gpaValue = percentageToGPA(percentage, userScale);
+        return formatGPA(gpaValue, userScale);
     };
 
     const handleRevertOverride = async (courseId) => {
@@ -148,7 +148,7 @@ const Courses = () => {
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
-                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600"></div>
+                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-honolulu_blue"></div>
             </div>
         );
     }
@@ -205,25 +205,50 @@ const Courses = () => {
                         </div>
                         <span className="text-xl font-semibold text-gray-900">GPAConnect</span>
                     </div>
-                    <div className="mb-6">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-4">
 
-                                <div>
-                                    <h1 className="text-lg font-bold text-gray-900">Courses</h1>
-                                    <p className="text-sm text-gray-600">Manage your academic courses </p>
-                                </div>
-                            </div>
+                    {/* Navigation */}
+                    <nav className="space-y-2 mb-6">
+                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">NAVIGATION</div>
+                        <Link
+                            to="/"
+                            className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                        >
+                            <BarChart3 className="h-5 w-5" />
+                            <span>Dashboard</span>
+                        </Link>
+                        <div className="flex items-center space-x-3 px-3 py-2 bg-blue-50 text-black rounded-lg">
+                            <BookOpen className="h-5 w-5" />
+                            <span>Courses</span>
                         </div>
-                    </div>
-
+                        <Link
+                            to="/calendar"
+                            className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                        >
+                            <Calendar className="h-5 w-5" />
+                            <span>Calendar</span>
+                        </Link>
+                        <Link
+                            to="/settings"
+                            className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                        >
+                            <Settings className="h-5 w-5" />
+                            <span>GPA Settings</span>
+                        </Link>
+                        <Link
+                            to="/account"
+                            className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                        >
+                            <User className="h-5 w-5" />
+                            <span>Account</span>
+                        </Link>
+                    </nav>
 
                     {/* Quick Actions */}
-                    <div className="">
+                    <div className="mb-6">
                         <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">QUICK ACTIONS</div>
                         <button
                             onClick={() => setIsAddCourseModalOpen(true)}
-                            className="w-full flex items-center space-x-3 px-3 py-2  bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white border border-gray-300 font-medium rounded-lg transition-all duration-300 hover:bg-gray-50"
+                            className="w-full flex items-center space-x-3 px-3 py-2 bg-honolulu_blue hover:bg-blue_green text-white font-medium rounded-lg transition-colors"
                         >
                             <Plus className="h-5 w-5" />
                             <span>Add Course</span>
@@ -303,7 +328,7 @@ const Courses = () => {
                                     <button
                                         onClick={() => setViewMode('table')}
                                         className={`p-2 rounded-md transition-colors ${viewMode === 'table'
-                                            ? 'bg-white text-blue-600 shadow-sm'
+                                            ? 'bg-white text-honolulu_blue shadow-sm'
                                             : 'text-gray-600 hover:text-gray-900'
                                             }`}
                                         title="Table View"
@@ -313,7 +338,7 @@ const Courses = () => {
                                     <button
                                         onClick={() => setViewMode('grid')}
                                         className={`p-2 rounded-md transition-colors ${viewMode === 'grid'
-                                            ? 'bg-white text-blue-600 shadow-sm'
+                                            ? 'bg-white text-honolulu_blue shadow-sm'
                                             : 'text-gray-600 hover:text-gray-900'
                                             }`}
                                         title="Grid View"
@@ -471,7 +496,7 @@ const Courses = () => {
                                                             <div className="flex items-center space-x-2">
                                                                 <Link
                                                                     to={`/course/${course._id}`}
-                                                                    className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
+                                                                    className="text-honolulu_blue hover:text-blue_green p-1 rounded hover:bg-vivid_sky_blue-100"
                                                                     title="View Course"
                                                                 >
                                                                     <Eye className="h-4 w-4" />
@@ -542,7 +567,7 @@ const CourseCard = ({ course, getGradeColor, formatGradePoints, onView, onRevert
             <div className="flex items-center space-x-1">
                 <button
                     onClick={onView}
-                    className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
+                    className="text-honolulu_blue hover:text-blue_green p-1 rounded hover:bg-vivid_sky_blue-100"
                     title="View Course"
                 >
                     <Eye className="h-4 w-4" />
@@ -605,7 +630,7 @@ const CourseCard = ({ course, getGradeColor, formatGradePoints, onView, onRevert
 
 // Small reusable stat card
 const StatCard = ({ label, value, Icon }) => (
-    <div className=" bg-gradient-to-r from-blue-600 to-indigo-600 text-transparent bg-clip-text rounded-xl p-4 py-6 sm:p-6 border  border-gray-100 shadow-sm">
+    <div className=" text-honolulu_blue rounded-xl p-4 py-6 sm:p-6 border  border-gray-100 shadow-sm">
         <div className="flex items-center justify-between">
             <div>
                 <p className="text-xs sm:text-sm font-medium text-gray-600">{label}</p>

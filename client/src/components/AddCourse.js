@@ -80,7 +80,7 @@ const AddCourse = () => {
             <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-4">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
                     <div className="flex items-center space-x-4">
-                        <div className="w-10 h-10 bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg flex items-center justify-center border border-gray-300">
+                        <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center border border-gray-300">
                             <GraduationCap className="h-5 w-5 text-gray-600" />
                         </div>
                         <div>
@@ -102,7 +102,7 @@ const AddCourse = () => {
                 <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
                     <div className="px-4 sm:px-6 py-4 border-b border-gray-100">
                         <div className="flex items-center">
-                            <div className="w-10 h-10 bg-gradient-to-br from-gray-100 to-gray-300 rounded-lg flex items-center justify-center mr-3">
+                            <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
                                 <BookOpen className="h-5 w-5 text-gray-600" />
                             </div>
                             <div>
@@ -282,7 +282,7 @@ const AddCourse = () => {
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="px-4 sm:px-6 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-gray-400 to-gray-500 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+                                className="px-4 sm:px-6 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gray-400 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
                             >
                                 {loading ? (
                                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2 inline"></div>

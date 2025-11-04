@@ -37,22 +37,19 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Custom scrollbar */
+/* Hide scrollbar but keep functionality */
 ::-webkit-scrollbar {
-  width: 8px;
+  display: none;
 }
 
-::-webkit-scrollbar-track {
-  background: #f1f5f9;
+/* For Firefox */
+* {
+  scrollbar-width: none;
 }
 
-::-webkit-scrollbar-thumb {
-  background: #3b82f6;
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #2563eb;
+/* For IE and Edge */
+* {
+  -ms-overflow-style: none;
 }
 
 /* Custom animations */
@@ -106,7 +103,7 @@ html {
 /* Loading spinner */
 .spinner {
   border: 2px solid #f3f3f3;
-  border-top: 2px solid #3b82f6;
+  border-top: 2px solid #0077b6;
   border-radius: 50%;
   width: 20px;
   height: 20px;

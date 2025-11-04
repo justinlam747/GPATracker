@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { convertGPA, formatGPA, getLetterGrade, getGradeColor } from '../utils/scaleConverter';
+import { percentageToGPA, formatGPA, getLetterGrade, getGradeColor } from '../utils/scaleConverter';
 import AddCourseModal from './AddCourseModal';
 import Footer from './Footer';
 import api from '../utils/api';
@@ -20,7 +20,9 @@ import {
     Trash2,
     LogOut,
     FileText,
-    Lock
+    Lock,
+    Settings,
+    User
 } from 'lucide-react';
 import {
     LineChart,
@@ -83,30 +85,25 @@ const Dashboard = () => {
         const coursesArray = courses || [];
         if (!coursesArray.length) return 0;
 
+        const userScale = user?.gpaScale || '4.0';
         let totalWeightedPoints = 0;
         let totalCredits = 0;
 
         coursesArray.forEach(course => {
-            // Get the final grade for the course
-            let gradePoints = 0;
-
-            if (course.gradeOverride !== undefined) {
-                // Use overridden grade points
-                gradePoints = course.gradeOverridePoints || 0;
-            } else if (course.gradePoints !== undefined) {
-                // Use calculated grade points
-                gradePoints = course.gradePoints;
-            }
+            // Get the course grade as percentage
+            const percentage = course.calculatedGrade || course.grade || 0;
 
             // Only include courses with valid grades
-            if (gradePoints > 0) {
+            if (percentage > 0) {
+                // Convert percentage to GPA points based on user's scale
+                const gradePoints = percentageToGPA(percentage, userScale);
                 totalWeightedPoints += gradePoints * course.credits;
                 totalCredits += course.credits;
             }
         });
 
         return totalCredits > 0 ? (totalWeightedPoints / totalCredits) : 0;
-    }, [courses]);
+    }, [courses, user]);
 
     const handleGradePrediction = () => {
         const current = parseFloat(predictionData.currentGrade);
@@ -242,7 +239,7 @@ const Dashboard = () => {
             if (isNaN(numGrade)) return 'bg-gray-100 text-gray-800';
 
             if (numGrade >= 90) return 'bg-green-100 text-green-800';
-            if (numGrade >= 80) return 'bg-blue-100 text-blue-800';
+            if (numGrade >= 80) return 'bg-vivid_sky_blue-100 text-vivid_sky_blue-900';
             if (numGrade >= 70) return 'bg-yellow-100 text-yellow-800';
             if (numGrade >= 60) return 'bg-orange-100 text-orange-800';
             return 'bg-red-100 text-red-800';
@@ -250,7 +247,7 @@ const Dashboard = () => {
             // GPA-based color coding
             if (typeof grade === 'string') {
                 if (grade.includes('A')) return 'bg-green-100 text-green-800';
-                if (grade.includes('B')) return 'bg-blue-100 text-blue-800';
+                if (grade.includes('B')) return 'bg-vivid_sky_blue-100 text-vivid_sky_blue-900';
                 if (grade.includes('C')) return 'bg-yellow-100 text-yellow-800';
                 if (grade.includes('D')) return 'bg-orange-100 text-orange-800';
                 if (grade.includes('F')) return 'bg-red-100 text-red-800';
@@ -260,7 +257,7 @@ const Dashboard = () => {
                 if (isNaN(numGrade)) return 'bg-gray-100 text-gray-800';
 
                 if (numGrade >= 3.7) return 'bg-green-100 text-green-800';
-                if (numGrade >= 3.0) return 'bg-blue-100 text-blue-800';
+                if (numGrade >= 3.0) return 'bg-vivid_sky_blue-100 text-vivid_sky_blue-900';
                 if (numGrade >= 2.0) return 'bg-yellow-100 text-yellow-800';
                 if (numGrade >= 1.0) return 'bg-orange-100 text-orange-800';
                 return 'bg-red-100 text-red-800';
@@ -280,7 +277,7 @@ const Dashboard = () => {
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
-                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600"></div>
+                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-honolulu_blue"></div>
             </div>
         );
     }
@@ -356,31 +353,35 @@ const Dashboard = () => {
                     </div>
 
                     <nav className="space-y-2 mb-6">
-                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">OVERVIEW</div>
-                        <a href="#stats" onClick={(e) => { e.preventDefault(); document.getElementById('stats').scrollIntoView({ behavior: 'smooth', block: 'center' }); }} className="flex items-center space-x-3 px-3 py-2 bg-blue-50 text-black rounded-lg">
+                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">NAVIGATION</div>
+                        <div className="flex items-center space-x-3 px-3 py-2 bg-blue-50 text-black rounded-lg">
                             <BarChart3 className="h-5 w-5" />
                             <span>Dashboard</span>
-                        </a>
-                        <a href="#performance" onClick={(e) => { e.preventDefault(); document.getElementById('performance').scrollIntoView({ behavior: 'smooth', block: 'center' }); }} className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
-                            <TrendingUp className="h-5 w-5" />
-                            <span>Performance</span>
-                        </a>
-                        <a href="#predictions" onClick={(e) => { e.preventDefault(); document.getElementById('predictions').scrollIntoView({ behavior: 'smooth', block: 'center' }); }} className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
-                            <Target className="h-5 w-5" />
-                            <span>Grade Predictions</span>
-                        </a>
-
-                        <Link to="/calendar" className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
-                            <Calendar className="h-5 w-5" />
-                            <span>Deadlines</span>
-                        </Link>
-
+                        </div>
                         <Link
                             to="/courses"
                             className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
                         >
                             <BookOpen className="h-5 w-5" />
-                            <span>View All Courses</span>
+                            <span>Courses</span>
+                        </Link>
+                        <Link to="/calendar" className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
+                            <Calendar className="h-5 w-5" />
+                            <span>Calendar</span>
+                        </Link>
+                        <Link
+                            to="/settings"
+                            className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                        >
+                            <Settings className="h-5 w-5" />
+                            <span>GPA Settings</span>
+                        </Link>
+                        <Link
+                            to="/account"
+                            className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                        >
+                            <User className="h-5 w-5" />
+                            <span>Account</span>
                         </Link>
                     </nav>
 
@@ -389,7 +390,7 @@ const Dashboard = () => {
                         <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">QUICK ACTIONS</div>
                         <button
                             onClick={() => setIsAddCourseModalOpen(true)}
-                            className="w-full flex items-center space-x-3 px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg transition-all duration-300 border hover:from-blue-700 hover:to-indigo-700 border-gray-300"
+                            className="w-full flex items-center space-x-3 px-3 py-2 bg-honolulu_blue text-white font-medium rounded-lg transition-all duration-300 border hover:bg-blue_green border-gray-300"
                         >
                             <Plus className="h-5 w-5" />
                             <span>Add Course</span>
@@ -459,7 +460,7 @@ const Dashboard = () => {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-xs sm:text-sm font-medium text-gray-600">Current GPA</p>
-                                    <p className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">{currentGPA.toFixed(2)}</p>
+                                    <p className="text-2xl sm:text-3xl font-bold text-honolulu_blue">{currentGPA.toFixed(2)}</p>
                                 </div>
                                 <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center">
                                     <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-black" />
@@ -471,7 +472,7 @@ const Dashboard = () => {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-xs sm:text-sm font-medium text-gray-600">Credits Achieved</p>
-                                    <p className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">{totalCredits}</p>
+                                    <p className="text-2xl sm:text-3xl font-bold text-honolulu_blue">{totalCredits}</p>
                                 </div>
                                 <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center">
                                     <BookOpen className="h-5 w-5 sm:h-6 sm:w-6 text-black" />
@@ -483,7 +484,7 @@ const Dashboard = () => {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-xs sm:text-sm font-medium text-gray-600">Total Courses</p>
-                                    <p className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">{(courses || []).length}</p>
+                                    <p className="text-2xl sm:text-3xl font-bold text-honolulu_blue">{(courses || []).length}</p>
                                 </div>
                                 <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center">
                                     <Target className="h-5 w-5 sm:h-6 sm:w-6 text-black" />
@@ -495,7 +496,7 @@ const Dashboard = () => {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-xs sm:text-sm font-medium text-gray-600">Grade Scale</p>
-                                    <p className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">{user?.gpaScale || '4.0'}</p>
+                                    <p className="text-2xl sm:text-3xl font-bold text-honolulu_blue">{user?.gpaScale || '4.0'}</p>
                                 </div>
                                 <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center">
                                     <Award className="h-5 w-5 sm:h-6 sm:w-6 text-black" />
@@ -628,10 +629,10 @@ const Dashboard = () => {
                                         <Line
                                             type="monotone"
                                             dataKey="grade"
-                                            stroke="#0328fc"
+                                            stroke="#0077b6"
                                             strokeWidth={3}
-                                            dot={{ fill: '#0328fc', strokeWidth: 2, r: 2 }}
-                                            activeDot={{ r: 2, stroke: '#0328fc', strokeWidth: 2 }}
+                                            dot={{ fill: '#0077b6', strokeWidth: 2, r: 2 }}
+                                            activeDot={{ r: 2, stroke: '#0077b6', strokeWidth: 2 }}
                                         />
                                     </LineChart>
                                 </ResponsiveContainer>
@@ -650,7 +651,7 @@ const Dashboard = () => {
                             <h3 className="text-lg font-semibold text-gray-900">Recent Courses</h3>
                             <Link
                                 to="/courses"
-                                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                                className="text-sm text-honolulu_blue hover:text-blue_green font-medium"
                             >
                                 View All
                             </Link>
@@ -765,23 +766,23 @@ const Dashboard = () => {
                                         type="number"
                                         value={predictionData.targetGrade}
                                         onChange={(e) => setPredictionData(prev => ({ ...prev, targetGrade: e.target.value }))}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-honolulu_blue focus:border-transparent"
                                         placeholder="90"
                                     />
                                 </div>
                                 <button
                                     onClick={handleGradePrediction}
-                                    className="w-full   bg-gradient-to-r from-blue-600 to-indigo-600 text-white border border-gray-300 hover:bg-gray-50 py-2 px-4 rounded-lg font-medium transition-all duration-300"
+                                    className="w-full bg-honolulu_blue text-white border border-gray-300 hover:bg-blue_green py-2 px-4 rounded-lg font-medium transition-all duration-300"
                                 >
                                     Calculate Required Final Grade
                                 </button>
                                 {predictionData.predictedFinal && (
-                                    <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                                    <div className="mt-4 p-4 bg-vivid_sky_blue-100 rounded-lg">
                                         <div className="text-center">
-                                            <div className="text-2xl font-bold text-blue-600">
+                                            <div className="text-2xl font-bold text-honolulu_blue">
                                                 {predictionData.predictedFinal}%
                                             </div>
-                                            <div className="text-sm text-blue-600">Required on Final Exam</div>
+                                            <div className="text-sm text-honolulu_blue">Required on Final Exam</div>
                                         </div>
                                     </div>
                                 )}
@@ -799,7 +800,7 @@ const Dashboard = () => {
                                         type="number"
                                         value={predictionData.currentGrade}
                                         onChange={(e) => setPredictionData(prev => ({ ...prev, currentGrade: e.target.value }))}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-honolulu_blue focus:border-transparent"
                                         placeholder="85"
                                     />
                                 </div>
@@ -809,7 +810,7 @@ const Dashboard = () => {
                                         type="number"
                                         value={predictionData.finalWeight}
                                         onChange={(e) => setPredictionData(prev => ({ ...prev, finalWeight: e.target.value }))}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-honolulu_blue focus:border-transparent"
                                         placeholder="40"
                                     />
                                 </div>
@@ -819,13 +820,13 @@ const Dashboard = () => {
                                         type="number"
                                         value={predictionData.examGrade}
                                         onChange={(e) => setPredictionData(prev => ({ ...prev, examGrade: e.target.value }))}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-honolulu_blue focus:border-transparent"
                                         placeholder="88"
                                     />
                                 </div>
                                 <button
                                     onClick={handleFinalGradeCalculation}
-                                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white border border-gray-300 hover:bg-gray-50 py-2 px-4 rounded-lg font-medium transition-all duration-300"
+                                    className="w-full bg-honolulu_blue text-white border border-gray-300 hover:bg-blue_green py-2 px-4 rounded-lg font-medium transition-all duration-300"
                                 >
                                     Calculate Final Grade
                                 </button>
@@ -877,7 +878,7 @@ const Dashboard = () => {
                             <div className="mt-4 text-center">
                                 <Link
                                     to="/calendar"
-                                    className="text-blue-600 hover:text-blue-700 font-medium"
+                                    className="text-honolulu_blue hover:text-blue_green font-medium"
                                 >
                                     View all course deadlines →
                                 </Link>

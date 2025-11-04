@@ -16,7 +16,7 @@ const PrivacyPolicy = () => {
                             <ArrowLeft className="h-5 w-5" />
                         </Link>
                         <div className="flex items-center space-x-3">
-                            <Lock className="h-8 w-8 text-slate-600" />
+                            <Lock className="h-8 w-8 text-gray-700" />
                             <div>
                                 <h1 className="text-2xl font-bold text-gray-900">Privacy Policy</h1>
                                 <p className="text-sm text-gray-600">Last updated: {new Date().toLocaleDateString()}</p>
@@ -30,10 +30,10 @@ const PrivacyPolicy = () => {
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
                     {/* Privacy Notice */}
-                    <div className="mb-8 p-4 bg-slate-50 border border-slate-200 rounded-lg">
+                    <div className="mb-8 p-4 bg-gray-50 border border-gray-300 rounded-lg">
                         <div className="flex items-start space-x-3">
-                            <Shield className="h-5 w-5 text-slate-600 mt-0.5 flex-shrink-0" />
-                            <div className="text-sm text-slate-800">
+                            <Shield className="h-5 w-5 text-gray-700 mt-0.5 flex-shrink-0" />
+                            <div className="text-sm text-gray-900">
                                 <p className="font-medium">Privacy Commitment</p>
                                 <p className="mt-1">
                                     We are committed to protecting your privacy and ensuring the security of your personal information.
@@ -46,9 +46,9 @@ const PrivacyPolicy = () => {
                     {/* Policy Content */}
                     <div className="prose prose-gray max-w-none">
                         <h2 className="text-xl font-semibold text-gray-900 mb-4">1. Information We Collect</h2>
-                        <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-6">
-                            <h3 className="font-medium text-slate-900 mb-2">Personal Information:</h3>
-                            <ul className="list-disc pl-6 text-slate-800 text-sm space-y-1">
+                        <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 mb-6">
+                            <h3 className="font-medium text-gray-900 mb-2">Personal Information:</h3>
+                            <ul className="list-disc pl-6 text-gray-900 text-sm space-y-1">
                                 <li>Email address and first name for account creation</li>
                                 <li>Academic information (courses, grades, assignments)</li>
                                 <li>Study logs and academic progress data</li>
@@ -69,10 +69,10 @@ const PrivacyPolicy = () => {
                         </ul>
 
                         <h2 className="text-xl font-semibold text-gray-900 mb-4">3. Data Security</h2>
-                        <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-6">
+                        <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 mb-6">
                             <div className="flex items-start space-x-3">
-                                <Lock className="h-5 w-5 text-slate-600 mt-0.5 flex-shrink-0" />
-                                <div className="text-sm text-slate-800">
+                                <Lock className="h-5 w-5 text-gray-700 mt-0.5 flex-shrink-0" />
+                                <div className="text-sm text-gray-900">
                                     <p className="font-medium">Security Measures:</p>
                                     <ul className="list-disc pl-6 mt-2 space-y-1">
                                         <li>All data is encrypted in transit using HTTPS</li>
@@ -102,11 +102,11 @@ const PrivacyPolicy = () => {
                         </p>
 
                         <h2 className="text-xl font-semibold text-gray-900 mb-4">6. Your Rights and Choices</h2>
-                        <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 mb-6">
-                            <p className="text-slate-800 text-sm font-medium mb-2">
+                        <div className="bg-gray-50 border border-gray-300 rounded-lg p-4 mb-6">
+                            <p className="text-gray-900 text-sm font-medium mb-2">
                                 You have the right to:
                             </p>
-                            <ul className="list-disc pl-6 text-slate-700 text-sm space-y-1">
+                            <ul className="list-disc pl-6 text-gray-700 text-sm space-y-1">
                                 <li>Access and review your personal information</li>
                                 <li>Update or correct inaccurate information</li>
                                 <li>Request deletion of your account and data</li>
@@ -165,7 +165,7 @@ const PrivacyPolicy = () => {
                         <div className="flex items-center justify-between">
                             <Link
                                 to="/terms-of-service"
-                                className="text-blue-600 hover:text-blue-700 font-medium flex items-center space-x-2"
+                                className="text-gray-900 hover:text-gray-700 font-medium flex items-center space-x-2"
                             >
                                 <FileText className="h-4 w-4" />
                                 <span>Terms of Service</span>
