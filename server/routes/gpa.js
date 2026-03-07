@@ -1,23 +1,22 @@
 const express = require('express');
 const Course = require('../models/Course');
 const User = require('../models/User');
+const StudyLog = require('../models/StudyLog');
 const { auth } = require('../middleware/auth');
 const { validate, sanitizeInput } = require('../middleware/validation');
 const { z } = require('zod');
-const StudyLog = require('../models/StudyLog'); // Added StudyLog model
+const {
+    resolveGrade,
+    resolveGradeLegacy,
+    isLetterGrade,
+    calculateWeightedGPA,
+    VALID_LETTER_GRADES
+} = require('../utils/gradeConversion');
 
 const router = express.Router();
 
-// Grade point mapping (kept for backward compatibility)
-const gradePoints = {
-    'A+': 4.0, 'A': 4.0, 'A-': 3.7,
-    'B+': 3.3, 'B': 3.0, 'B-': 2.7,
-    'C+': 2.3, 'C': 2.0, 'C-': 1.7,
-    'D+': 1.3, 'D': 1.0, 'D-': 0.7,
-    'F': 0.0, 'P': 0.0, 'NP': 0.0, 'W': 0.0, 'I': 0.0
-};
+// ── Zod Validation Schemas ──────────────────────────────────────────────────
 
-// Assignment validation schema
 const assignmentSchema = z.object({
     name: z.string()
         .min(1, 'Assignment name is required')
@@ -32,7 +31,7 @@ const assignmentSchema = z.object({
         .default(0),
     grade: z.union([
         z.string().min(1, 'Grade is required'),
-        z.number().min(0, 'Grade must be at least 0')
+        z.number().min(0, 'Grade must be at least 0').max(100, 'Grade must be at most 100')
     ]),
     maxGrade: z.union([
         z.string().min(1, 'Max grade is required').transform(val => parseFloat(val)),
@@ -46,7 +45,6 @@ const assignmentSchema = z.object({
         .optional()
 });
 
-// Validation schemas
 const courseSchema = z.object({
     name: z.string()
         .min(1, 'Course name is required')
@@ -59,22 +57,21 @@ const courseSchema = z.object({
     credits: z.union([
         z.string().min(1, 'Credits is required').transform(val => parseFloat(val)),
         z.number().min(0.5, 'Credits must be at least 0.5')
-    ]).refine(val => val <= 10, 'Credits must be less than 10'),
+    ]).refine(val => val >= 0.5 && val <= 10, 'Credits must be between 0.5 and 10'),
     courseType: z.enum(['simple', 'detailed'])
         .default('simple'),
-    // For simple courses - grade is now optional
     grade: z.union([
         z.string().min(1, 'Grade must not be empty if provided'),
-        z.number().min(0, 'Grade must be at least 0 if provided')
+        z.number().min(0, 'Grade must be at least 0').max(100, 'Grade must be at most 100')
     ]).optional(),
-    // Assignments for any course
+    gradeInputType: z.enum(['letter', 'percentage'])
+        .optional(),
     assignments: z.array(assignmentSchema)
         .default([])
         .optional(),
-    // User can override calculated grade
     gradeOverride: z.union([
         z.string().min(1),
-        z.number().min(0)
+        z.number().min(0).max(100)
     ]).optional(),
     semester: z.string()
         .min(1, 'Semester is required')
@@ -93,62 +90,95 @@ const courseSchema = z.object({
         .trim()
         .optional(),
     gpaScale: z.enum(['4.0', '4.3', 'percentage'])
-        .default('4.0')
+        .default('4.0'),
+    isCompleted: z.boolean().optional()
 }).refine((data) => {
-    // Remove the requirement for simple courses to have a grade
-    // Both course types can now be created without grades
+    // Validate assignment weights sum if detailed course has assignments
+    if (data.assignments && data.assignments.length > 0) {
+        const totalWeight = data.assignments.reduce((sum, a) => sum + (a.weight || 0), 0);
+        // Allow a small floating point tolerance
+        if (totalWeight > 0 && Math.abs(totalWeight - 100) > 0.01) {
+            return false;
+        }
+    }
     return true;
 }, {
-    message: 'Course validation passed',
-    path: ['courseType']
+    message: 'Assignment weights must sum to 100%',
+    path: ['assignments']
 });
 
-// Create update schema by making all fields optional
 const courseUpdateSchema = z.object({
     name: z.string().min(1).max(100).trim().optional(),
     code: z.string().max(20).trim().optional(),
     credits: z.union([
         z.string().min(1).transform(val => parseFloat(val)),
         z.number().min(0.5)
-    ]).refine(val => val <= 10).optional(),
+    ]).refine(val => val >= 0.5 && val <= 10).optional(),
     courseType: z.enum(['simple', 'detailed']).optional(),
-    grade: z.union([z.string().min(1), z.number().min(0)]).optional(),
+    grade: z.union([z.string().min(1), z.number().min(0).max(100)]).optional(),
+    gradeInputType: z.enum(['letter', 'percentage']).optional(),
     assignments: z.array(assignmentSchema).optional(),
     semester: z.string().min(1).max(20).trim().optional(),
     year: z.number().int().min(2000).max(2030).optional(),
     category: z.string().max(50).trim().optional(),
     notes: z.string().max(500).trim().optional(),
-    gpaScale: z.enum(['4.0', '4.3', 'percentage']).optional()
+    gpaScale: z.enum(['4.0', '4.3', 'percentage']).optional(),
+    isCompleted: z.boolean().optional()
 });
 
-// Calculate GPA for a set of courses
+// ── GPA Calculation (uses model's shouldIncludeInGPA) ───────────────────────
+
 const calculateGPA = (courses) => {
-    let totalPoints = 0;
-    let totalCredits = 0;
+    const entries = [];
 
-    courses.forEach(course => {
-        if (course.isCompleted && course.grade !== 'W' && course.grade !== 'I') {
-            const finalGrade = course.getFinalGrade();
-            if (finalGrade) {
-                totalPoints += finalGrade.gradePoints * course.credits;
-                totalCredits += course.credits;
-            }
+    for (const course of courses) {
+        if (!course.shouldIncludeInGPA()) continue;
+
+        const finalGrade = course.getFinalGrade();
+        if (finalGrade && typeof finalGrade.gradePoints === 'number' && !isNaN(finalGrade.gradePoints)) {
+            entries.push({
+                gradePoints: finalGrade.gradePoints,
+                credits: course.credits
+            });
         }
-    });
+    }
 
-    return totalCredits > 0 ? (totalPoints / totalCredits).toFixed(2) : 0;
+    return calculateWeightedGPA(entries);
 };
 
-// @route   POST /api/gpa/courses
-// @desc    Add a new course
-// @access  Private
+/**
+ * Auto-detect gradeInputType from the grade value if not explicitly provided.
+ */
+function inferGradeInputType(grade) {
+    if (grade === undefined || grade === null || grade === '') {
+        return 'letter';
+    }
+    if (typeof grade === 'number') {
+        return 'percentage';
+    }
+    if (typeof grade === 'string') {
+        if (isLetterGrade(grade.trim())) {
+            return 'letter';
+        }
+        // If it parses as a number, it's a percentage
+        const num = parseFloat(grade);
+        if (!isNaN(num)) {
+            return 'percentage';
+        }
+    }
+    return 'letter';
+}
+
+// ── Routes ──────────────────────────────────────────────────────────────────
+
+// POST /api/gpa/courses - Add a new course
 router.post('/courses',
     auth,
     sanitizeInput,
     validate(courseSchema),
     async (req, res) => {
         try {
-            const { name, code, credits, courseType, grade, assignments, semester, year, category, notes, gpaScale } = req.body;
+            const { name, code, credits, courseType, grade, gradeInputType, assignments, semester, year, category, notes, gpaScale, isCompleted } = req.body;
 
             const courseData = {
                 user: req.user._id,
@@ -160,61 +190,30 @@ router.post('/courses',
                 year,
                 category,
                 notes,
-                gpaScale: gpaScale || '4.0' // Default to 4.0 if not specified
+                gpaScale: gpaScale || '4.0',
+                isCompleted: isCompleted || false
             };
 
-            // Handle assignments for any course type
+            // Determine input type explicitly
+            if (courseType === 'simple' && grade !== undefined && grade !== '') {
+                courseData.grade = grade;
+                courseData.gradeInputType = gradeInputType || inferGradeInputType(grade);
+
+                // Pre-resolve grade points
+                const resolved = resolveGrade(grade, courseData.gradeInputType, courseData.gpaScale);
+                courseData.gradePoints = resolved.gradePoints;
+            }
+
+            // Handle assignments
             if (assignments && assignments.length > 0) {
                 courseData.assignments = assignments;
             }
 
-            // Handle grade override if provided
+            // Handle grade override
             if (req.body.gradeOverride !== undefined) {
                 courseData.gradeOverride = req.body.gradeOverride;
-                // Calculate grade points for override
-                if (typeof req.body.gradeOverride === 'string') {
-                    courseData.gradeOverridePoints = gradePoints[req.body.gradeOverride] || 0.0;
-                } else if (typeof req.body.gradeOverride === 'number') {
-                    // Percentage grade - convert to 4.0 scale
-                    if (req.body.gradeOverride >= 93) courseData.gradeOverridePoints = 4.0;
-                    else if (req.body.gradeOverride >= 90) courseData.gradeOverridePoints = 3.7;
-                    else if (req.body.gradeOverride >= 87) courseData.gradeOverridePoints = 3.3;
-                    else if (req.body.gradeOverride >= 83) courseData.gradeOverridePoints = 3.0;
-                    else if (req.body.gradeOverride >= 80) courseData.gradeOverridePoints = 2.7;
-                    else if (req.body.gradeOverride >= 77) courseData.gradeOverridePoints = 2.3;
-                    else if (req.body.gradeOverride >= 73) courseData.gradeOverridePoints = 2.0;
-                    else if (req.body.gradeOverride >= 70) courseData.gradeOverridePoints = 1.7;
-                    else if (req.body.gradeOverride >= 67) courseData.gradeOverridePoints = 1.3;
-                    else if (req.body.gradeOverride >= 63) courseData.gradeOverridePoints = 1.0;
-                    else if (req.body.gradeOverride >= 60) courseData.gradeOverridePoints = 0.7;
-                    else courseData.gradeOverridePoints = 0.0;
-                }
-            }
-
-            // For simple courses, calculate grade points if grade is provided
-            if (courseType === 'simple' && grade) {
-                courseData.grade = grade;
-                if (typeof grade === 'string') {
-                    courseData.gradePoints = gradePoints[grade] || 0.0;
-                } else if (typeof grade === 'number') {
-                    // Percentage grade - convert to 4.0 scale
-                    if (grade >= 93) courseData.gradePoints = 4.0;
-                    else if (grade >= 90) courseData.gradePoints = 3.7;
-                    else if (grade >= 87) courseData.gradePoints = 3.3;
-                    else if (grade >= 83) courseData.gradePoints = 3.0;
-                    else if (grade >= 80) courseData.gradePoints = 2.7;
-                    else if (grade >= 77) courseData.gradePoints = 2.3;
-                    else if (grade >= 73) courseData.gradePoints = 2.0;
-                    else if (grade >= 70) courseData.gradePoints = 1.7;
-                    else if (grade >= 67) courseData.gradePoints = 1.3;
-                    else if (grade >= 63) courseData.gradePoints = 1.0;
-                    else if (grade >= 60) courseData.gradePoints = 0.7;
-                    else courseData.gradePoints = 0.0;
-                }
-            } else if (courseType === 'simple' && !grade) {
-                // Course without grade - set default values
-                courseData.grade = undefined;
-                courseData.gradePoints = 0.0;
+                const overrideResolved = resolveGradeLegacy(req.body.gradeOverride, courseData.gpaScale);
+                courseData.gradeOverridePoints = overrideResolved.gradePoints;
             }
 
             const course = new Course(courseData);
@@ -235,9 +234,7 @@ router.post('/courses',
     }
 );
 
-// @route   GET /api/gpa/courses
-// @desc    Get all courses for a user
-// @access  Private
+// GET /api/gpa/courses - Get all courses for a user
 router.get('/courses', auth, async (req, res) => {
     try {
         const { semester, year, category } = req.query;
@@ -262,9 +259,7 @@ router.get('/courses', auth, async (req, res) => {
     }
 });
 
-// @route   GET /api/gpa/courses/:id
-// @desc    Get a single course by ID
-// @access  Private
+// GET /api/gpa/courses/:id - Get a single course
 router.get('/courses/:id', auth, async (req, res) => {
     try {
         const course = await Course.findOne({ _id: req.params.id, user: req.user._id });
@@ -288,42 +283,42 @@ router.get('/courses/:id', auth, async (req, res) => {
     }
 });
 
-// @route   GET /api/gpa/summary
-// @desc    Get GPA summary for a user
-// @access  Private
+// GET /api/gpa/summary - GPA summary for a user
 router.get('/summary', auth, async (req, res) => {
     try {
         const courses = await Course.find({ user: req.user._id });
 
-        // Overall GPA
+        // Overall GPA — uses shouldIncludeInGPA (checks isCompleted + excludes W/I/P/NP)
         const overallGPA = calculateGPA(courses);
 
         // GPA by semester
         const semesterGPAs = {};
         const semesters = [...new Set(courses.map(c => `${c.semester} ${c.year}`))];
 
-        semesters.forEach(sem => {
-            const [semester, year] = sem.split(' ');
-            const semesterCourses = courses.filter(c => c.semester === semester && c.year === parseInt(year));
+        for (const sem of semesters) {
+            const parts = sem.split(' ');
+            const year = parseInt(parts.pop());
+            const semester = parts.join(' ');
+            const semesterCourses = courses.filter(c => c.semester === semester && c.year === year);
             semesterGPAs[sem] = calculateGPA(semesterCourses);
-        });
+        }
 
         // GPA by category
         const categoryGPAs = {};
-        const categories = [...new Set(courses.map(c => c.category))];
+        const categories = [...new Set(courses.map(c => c.category || 'General'))];
 
-        categories.forEach(cat => {
-            const categoryCourses = courses.filter(c => c.category === cat);
+        for (const cat of categories) {
+            const categoryCourses = courses.filter(c => (c.category || 'General') === cat);
             categoryGPAs[cat] = calculateGPA(categoryCourses);
-        });
+        }
 
-        // Total credits
+        // Total credits (only from GPA-eligible courses)
         const totalCredits = courses
-            .filter(c => c.isCompleted && c.grade !== 'W' && c.grade !== 'I')
+            .filter(c => c.shouldIncludeInGPA())
             .reduce((sum, c) => sum + c.credits, 0);
 
         res.json({
-            overallGPA: parseFloat(overallGPA),
+            overallGPA,
             semesterGPAs,
             categoryGPAs,
             totalCredits,
@@ -339,9 +334,7 @@ router.get('/summary', auth, async (req, res) => {
     }
 });
 
-// @route   PUT /api/gpa/courses/:id
-// @desc    Update a course
-// @access  Private
+// PUT /api/gpa/courses/:id - Update a course
 router.put('/courses/:id',
     auth,
     sanitizeInput,
@@ -356,25 +349,21 @@ router.put('/courses/:id',
                 });
             }
 
-            // Convert credits to number if it's a string
-            if (req.body.credits && typeof req.body.credits === 'string') {
-                req.body.credits = parseFloat(req.body.credits);
+            // If grade is being updated, resolve gradeInputType
+            if (req.body.grade !== undefined) {
+                const inputType = req.body.gradeInputType || inferGradeInputType(req.body.grade);
+                req.body.gradeInputType = inputType;
+                const resolved = resolveGrade(req.body.grade, inputType, req.body.gpaScale || course.gpaScale);
+                req.body.gradePoints = resolved.gradePoints;
             }
 
-            // Update grade points if grade changed
-            if (req.body.grade && req.body.grade !== course.grade) {
-                req.body.gradePoints = gradePoints[req.body.grade];
-            }
-
-            const updatedCourse = await Course.findByIdAndUpdate(
-                req.params.id,
-                req.body,
-                { new: true, runValidators: true }
-            );
+            // Apply updates
+            Object.assign(course, req.body);
+            await course.save();
 
             res.json({
                 message: 'Course updated successfully',
-                course: updatedCourse,
+                course,
                 code: 'COURSE_UPDATED'
             });
         } catch (error) {
@@ -387,9 +376,7 @@ router.put('/courses/:id',
     }
 );
 
-// @route   DELETE /api/gpa/courses/:id
-// @desc    Delete a course
-// @access  Private
+// DELETE /api/gpa/courses/:id - Delete a course
 router.delete('/courses/:id', auth, async (req, res) => {
     try {
         const course = await Course.findOneAndDelete({ _id: req.params.id, user: req.user._id });
@@ -414,9 +401,7 @@ router.delete('/courses/:id', auth, async (req, res) => {
     }
 });
 
-// @route   POST /api/gpa/courses/bulk
-// @desc    Import multiple courses at once
-// @access  Private
+// POST /api/gpa/courses/bulk - Import multiple courses
 router.post('/courses/bulk',
     auth,
     sanitizeInput,
@@ -438,16 +423,16 @@ router.post('/courses/bulk',
                 try {
                     const courseData = courses[i];
 
-                    // Validate required fields
-                    if (!courseData.name || !courseData.credits || courseData.grade === undefined) {
+                    if (!courseData.name || !courseData.credits) {
                         errors.push({
                             index: i,
-                            error: 'Missing required fields: name, credits, and grade are required'
+                            error: 'Missing required fields: name and credits are required'
                         });
                         continue;
                     }
 
-                    // Set defaults
+                    const inputType = courseData.gradeInputType || inferGradeInputType(courseData.grade);
+
                     const course = new Course({
                         user: req.user._id,
                         name: courseData.name,
@@ -455,10 +440,13 @@ router.post('/courses/bulk',
                         credits: courseData.credits,
                         courseType: 'simple',
                         grade: courseData.grade,
+                        gradeInputType: inputType,
                         semester: courseData.semester || 'Fall',
                         year: courseData.year || new Date().getFullYear(),
                         category: courseData.category || 'General',
-                        notes: courseData.notes || ''
+                        notes: courseData.notes || '',
+                        gpaScale: courseData.gpaScale || '4.0',
+                        isCompleted: courseData.isCompleted || false
                     });
 
                     await course.save();
@@ -487,9 +475,7 @@ router.post('/courses/bulk',
     }
 );
 
-// @route   POST /api/gpa/courses/:id/assignments
-// @desc    Add an assignment to a course
-// @access  Private
+// POST /api/gpa/courses/:id/assignments - Add assignment
 router.post('/courses/:id/assignments',
     auth,
     sanitizeInput,
@@ -504,14 +490,23 @@ router.post('/courses/:id/assignments',
                 });
             }
 
-            // Add assignment to course
             course.assignments.push(req.body);
+
+            // Validate total weight doesn't exceed 100
+            const totalWeight = course.assignments.reduce((sum, a) => sum + (a.weight || 0), 0);
+            if (totalWeight > 100.01) {
+                return res.status(400).json({
+                    message: `Total assignment weight would be ${totalWeight.toFixed(1)}%, which exceeds 100%`,
+                    code: 'WEIGHT_EXCEEDS_100'
+                });
+            }
+
             await course.save();
 
             res.status(201).json({
                 message: 'Assignment added successfully',
                 assignment: course.assignments[course.assignments.length - 1],
-                course: course,
+                course,
                 code: 'ASSIGNMENT_ADDED'
             });
         } catch (error) {
@@ -524,9 +519,7 @@ router.post('/courses/:id/assignments',
     }
 );
 
-// @route   PUT /api/gpa/courses/:id/assignments/:assignmentId
-// @desc    Update an assignment
-// @access  Private
+// PUT /api/gpa/courses/:id/assignments/:assignmentId - Update assignment
 router.put('/courses/:id/assignments/:assignmentId',
     auth,
     sanitizeInput,
@@ -549,14 +542,23 @@ router.put('/courses/:id/assignments/:assignmentId',
                 });
             }
 
-            // Update assignment
             Object.assign(assignment, req.body);
+
+            // Validate total weight
+            const totalWeight = course.assignments.reduce((sum, a) => sum + (a.weight || 0), 0);
+            if (totalWeight > 100.01) {
+                return res.status(400).json({
+                    message: `Total assignment weight would be ${totalWeight.toFixed(1)}%, which exceeds 100%`,
+                    code: 'WEIGHT_EXCEEDS_100'
+                });
+            }
+
             await course.save();
 
             res.json({
                 message: 'Assignment updated successfully',
-                assignment: assignment,
-                course: course,
+                assignment,
+                course,
                 code: 'ASSIGNMENT_UPDATED'
             });
         } catch (error) {
@@ -569,9 +571,7 @@ router.put('/courses/:id/assignments/:assignmentId',
     }
 );
 
-// @route   DELETE /api/gpa/courses/:id/assignments/:assignmentId
-// @desc    Delete an assignment
-// @access  Private
+// DELETE /api/gpa/courses/:id/assignments/:assignmentId
 router.delete('/courses/:id/assignments/:assignmentId',
     auth,
     async (req, res) => {
@@ -592,13 +592,12 @@ router.delete('/courses/:id/assignments/:assignmentId',
                 });
             }
 
-            // Remove assignment
-            assignment.remove();
+            assignment.deleteOne();
             await course.save();
 
             res.json({
                 message: 'Assignment removed successfully',
-                course: course,
+                course,
                 code: 'ASSIGNMENT_REMOVED'
             });
         } catch (error) {
@@ -611,41 +610,7 @@ router.delete('/courses/:id/assignments/:assignmentId',
     }
 );
 
-// @route   DELETE /api/gpa/courses/:id
-// @desc    Delete a course
-// @access  Private
-router.delete('/courses/:id',
-    auth,
-    sanitizeInput,
-    async (req, res) => {
-        try {
-            const course = await Course.findOne({ _id: req.params.id, user: req.user._id });
-            if (!course) {
-                return res.status(404).json({
-                    message: 'Course not found',
-                    code: 'COURSE_NOT_FOUND'
-                });
-            }
-
-            await Course.deleteOne({ _id: req.params.id, user: req.user._id });
-
-            res.json({
-                message: 'Course deleted successfully',
-                code: 'COURSE_DELETED'
-            });
-        } catch (error) {
-            console.error('Delete course error:', error);
-            res.status(500).json({
-                message: 'Server error while deleting course',
-                code: 'DELETE_COURSE_ERROR'
-            });
-        }
-    }
-);
-
-// @route   PUT /api/gpa/courses/:id/grade-override
-// @desc    Set or update grade override for a course
-// @access  Private
+// PUT /api/gpa/courses/:id/grade-override
 router.put('/courses/:id/grade-override',
     auth,
     sanitizeInput,
@@ -667,79 +632,16 @@ router.put('/courses/:id/grade-override',
                 });
             }
 
-            // Set grade override
+            // Resolve override using centralized conversion
             course.gradeOverride = gradeOverride;
-
-            // Calculate grade points for override based on user's GPA scale
-            const user = await User.findById(req.user._id);
-            const userGpaScale = user?.gpaScale || '4.0';
-            
-            if (typeof gradeOverride === 'string') {
-                // Letter grade - convert based on user's scale
-                if (userGpaScale === '4.3') {
-                    const gradeMap43 = {
-                        'A+': 4.3, 'A': 4.0, 'A-': 3.7,
-                        'B+': 3.3, 'B': 3.0, 'B-': 2.7,
-                        'C+': 2.3, 'C': 2.0, 'C-': 1.7,
-                        'D+': 1.3, 'D': 1.0, 'D-': 0.7,
-                        'F': 0.0
-                    };
-                    course.gradeOverridePoints = gradeMap43[gradeOverride] || 0.0;
-                } else if (userGpaScale === 'percentage') {
-                    // For percentage scale, convert letter to percentage first
-                    const letterToPercentage = {
-                        'A+': 97, 'A': 93, 'A-': 90,
-                        'B+': 87, 'B': 83, 'B-': 80,
-                        'C+': 77, 'C': 73, 'C-': 70,
-                        'D+': 67, 'D': 63, 'D-': 60,
-                        'F': 50
-                    };
-                    course.gradeOverridePoints = letterToPercentage[gradeOverride] || 0.0;
-                } else {
-                    // Default 4.0 scale
-                    course.gradeOverridePoints = gradePoints[gradeOverride] || 0.0;
-                }
-            } else if (typeof gradeOverride === 'number') {
-                if (userGpaScale === 'percentage') {
-                    // Keep percentage as-is for percentage scale
-                    course.gradeOverridePoints = gradeOverride;
-                } else if (userGpaScale === '4.3') {
-                    // Convert percentage to 4.3 scale
-                    if (gradeOverride >= 97) course.gradeOverridePoints = 4.3;
-                    else if (gradeOverride >= 93) course.gradeOverridePoints = 4.0;
-                    else if (gradeOverride >= 90) course.gradeOverridePoints = 3.7;
-                    else if (gradeOverride >= 87) course.gradeOverridePoints = 3.3;
-                    else if (gradeOverride >= 83) course.gradeOverridePoints = 3.0;
-                    else if (gradeOverride >= 80) course.gradeOverridePoints = 2.7;
-                    else if (gradeOverride >= 77) course.gradeOverridePoints = 2.3;
-                    else if (gradeOverride >= 73) course.gradeOverridePoints = 2.0;
-                    else if (gradeOverride >= 70) course.gradeOverridePoints = 1.7;
-                    else if (gradeOverride >= 67) course.gradeOverridePoints = 1.3;
-                    else if (gradeOverride >= 63) course.gradeOverridePoints = 1.0;
-                    else if (gradeOverride >= 60) course.gradeOverridePoints = 0.7;
-                    else course.gradeOverridePoints = 0.0;
-                } else {
-                    // Convert percentage to 4.0 scale
-                    if (gradeOverride >= 93) course.gradeOverridePoints = 4.0;
-                    else if (gradeOverride >= 90) course.gradeOverridePoints = 3.7;
-                    else if (gradeOverride >= 87) course.gradeOverridePoints = 3.3;
-                    else if (gradeOverride >= 83) course.gradeOverridePoints = 3.0;
-                    else if (gradeOverride >= 80) course.gradeOverridePoints = 2.7;
-                    else if (gradeOverride >= 77) course.gradeOverridePoints = 2.3;
-                    else if (gradeOverride >= 73) course.gradeOverridePoints = 2.0;
-                    else if (gradeOverride >= 70) course.gradeOverridePoints = 1.7;
-                    else if (gradeOverride >= 67) course.gradeOverridePoints = 1.3;
-                    else if (gradeOverride >= 63) course.gradeOverridePoints = 1.0;
-                    else if (gradeOverride >= 60) course.gradeOverridePoints = 0.7;
-                    else course.gradeOverridePoints = 0.0;
-                }
-            }
+            const resolved = resolveGradeLegacy(gradeOverride, course.gpaScale);
+            course.gradeOverridePoints = resolved.gradePoints;
 
             await course.save();
 
             res.json({
                 message: 'Grade override set successfully',
-                course: course,
+                course,
                 code: 'GRADE_OVERRIDE_SET'
             });
         } catch (error) {
@@ -752,9 +654,7 @@ router.put('/courses/:id/grade-override',
     }
 );
 
-// @route   POST /api/gpa/courses/:id/revert-override
-// @desc    Revert grade override to calculated grade
-// @access  Private
+// POST /api/gpa/courses/:id/revert-override
 router.post('/courses/:id/revert-override',
     auth,
     sanitizeInput,
@@ -768,7 +668,6 @@ router.post('/courses/:id/revert-override',
                 });
             }
 
-            // Remove grade override
             course.gradeOverride = undefined;
             course.gradeOverridePoints = undefined;
 
@@ -776,7 +675,7 @@ router.post('/courses/:id/revert-override',
 
             res.json({
                 message: 'Grade override reverted successfully',
-                course: course,
+                course,
                 code: 'GRADE_OVERRIDE_REVERTED'
             });
         } catch (error) {
@@ -789,13 +688,13 @@ router.post('/courses/:id/revert-override',
     }
 );
 
-// Update course study hours, difficulty, and notes
+// PUT /api/gpa/courses/:id/personal - Update study data
 router.put('/courses/:id/personal', auth, async (req, res) => {
     try {
         const { studyHours, difficultyRating, personalNotes, targetGrade } = req.body;
 
         const course = await Course.findOneAndUpdate(
-            { _id: req.params.id, user: req.user.id },
+            { _id: req.params.id, user: req.user._id },
             {
                 $set: {
                     ...(studyHours !== undefined && { studyHours }),
@@ -818,54 +717,79 @@ router.put('/courses/:id/personal', auth, async (req, res) => {
     }
 });
 
-// Get dashboard analytics
+// GET /api/gpa/dashboard-analytics
 router.get('/dashboard-analytics', auth, async (req, res) => {
     try {
-        const courses = await Course.find({ user: req.user.id });
+        const courses = await Course.find({ user: req.user._id });
 
-        // Calculate various analytics
+        // Use proper weighted GPA calculation
+        const gpaEntries = [];
+        for (const course of courses) {
+            if (course.shouldIncludeInGPA()) {
+                const finalGrade = course.getFinalGrade();
+                gpaEntries.push({
+                    gradePoints: finalGrade.gradePoints,
+                    credits: course.credits
+                });
+            }
+        }
+
         const analytics = {
             totalCourses: courses.length,
             totalCredits: courses.reduce((sum, course) => sum + (course.credits || 0), 0),
-            averageGPA: courses.length > 0 ? courses.reduce((sum, course) => sum + (course.gradePoints || 0), 0) / courses.length : 0,
+            averageGPA: calculateWeightedGPA(gpaEntries),
             semesterBreakdown: {},
             categoryBreakdown: {},
-            studyHoursTotal: courses.reduce((sum, course) => sum + (course.studyHours || 0), 0),
-            difficultyAverages: {}
+            studyHoursTotal: courses.reduce((sum, course) => sum + (course.studyHours || 0), 0)
         };
 
-        // Semester breakdown
-        courses.forEach(course => {
-            const semester = course.semester;
+        // Semester breakdown with proper weighted GPA
+        for (const course of courses) {
+            const semester = `${course.semester} ${course.year}`;
             if (!analytics.semesterBreakdown[semester]) {
-                analytics.semesterBreakdown[semester] = { courses: [], totalGPA: 0, count: 0 };
+                analytics.semesterBreakdown[semester] = { courses: [], entries: [], count: 0 };
             }
             analytics.semesterBreakdown[semester].courses.push(course);
-            analytics.semesterBreakdown[semester].totalGPA += course.gradePoints || 0;
             analytics.semesterBreakdown[semester].count += 1;
-        });
 
-        // Category breakdown
-        courses.forEach(course => {
+            if (course.shouldIncludeInGPA()) {
+                const fg = course.getFinalGrade();
+                analytics.semesterBreakdown[semester].entries.push({
+                    gradePoints: fg.gradePoints,
+                    credits: course.credits
+                });
+            }
+        }
+
+        for (const key of Object.keys(analytics.semesterBreakdown)) {
+            const bd = analytics.semesterBreakdown[key];
+            bd.averageGPA = calculateWeightedGPA(bd.entries);
+            delete bd.entries; // Don't send raw entries to client
+        }
+
+        // Category breakdown with proper weighted GPA
+        for (const course of courses) {
             const category = course.category || 'General';
             if (!analytics.categoryBreakdown[category]) {
-                analytics.categoryBreakdown[category] = { courses: [], totalGPA: 0, count: 0 };
+                analytics.categoryBreakdown[category] = { courses: [], entries: [], count: 0 };
             }
             analytics.categoryBreakdown[category].courses.push(course);
-            analytics.categoryBreakdown[category].totalGPA += course.gradePoints || 0;
             analytics.categoryBreakdown[category].count += 1;
-        });
 
-        // Calculate averages
-        Object.keys(analytics.semesterBreakdown).forEach(semester => {
-            analytics.semesterBreakdown[semester].averageGPA =
-                analytics.semesterBreakdown[semester].totalGPA / analytics.semesterBreakdown[semester].count;
-        });
+            if (course.shouldIncludeInGPA()) {
+                const fg = course.getFinalGrade();
+                analytics.categoryBreakdown[category].entries.push({
+                    gradePoints: fg.gradePoints,
+                    credits: course.credits
+                });
+            }
+        }
 
-        Object.keys(analytics.categoryBreakdown).forEach(category => {
-            analytics.categoryBreakdown[category].averageGPA =
-                analytics.categoryBreakdown[category].totalGPA / analytics.categoryBreakdown[category].count;
-        });
+        for (const key of Object.keys(analytics.categoryBreakdown)) {
+            const bd = analytics.categoryBreakdown[key];
+            bd.averageGPA = calculateWeightedGPA(bd.entries);
+            delete bd.entries;
+        }
 
         res.json({ success: true, analytics });
     } catch (error) {
@@ -874,25 +798,22 @@ router.get('/dashboard-analytics', auth, async (req, res) => {
     }
 });
 
-// Study Logs endpoints
+// POST /api/gpa/study-logs
 router.post('/study-logs', auth, async (req, res) => {
     try {
         const { courseId, hours, date, notes } = req.body;
 
-        // Validate required fields
         if (!courseId || !hours || !date) {
             return res.status(400).json({ error: 'Course ID, hours, and date are required' });
         }
 
-        // Verify course belongs to user
-        const course = await Course.findOne({ _id: courseId, user: req.user.id });
+        const course = await Course.findOne({ _id: courseId, user: req.user._id });
         if (!course) {
             return res.status(404).json({ error: 'Course not found' });
         }
 
-        // Create study log
         const studyLog = new StudyLog({
-            user: req.user.id,
+            user: req.user._id,
             course: courseId,
             hours: parseFloat(hours),
             date: new Date(date),
@@ -907,9 +828,10 @@ router.post('/study-logs', auth, async (req, res) => {
     }
 });
 
+// GET /api/gpa/study-logs
 router.get('/study-logs', auth, async (req, res) => {
     try {
-        const studyLogs = await StudyLog.find({ user: req.user.id })
+        const studyLogs = await StudyLog.find({ user: req.user._id })
             .sort({ date: -1 })
             .limit(50);
 
