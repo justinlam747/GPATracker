@@ -1,9 +1,10 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const morgan = require('morgan');
 const path = require('path');
 require('dotenv').config();
 
+const { pool } = require('./db/pool');
+const { migrate } = require('./db/migrate');
 const { applySecurityMiddleware } = require('./middleware/security');
 const authRoutes = require('./routes/auth');
 const gpaRoutes = require('./routes/gpa');
@@ -18,21 +19,22 @@ applySecurityMiddleware(app);
 // Logging middleware
 app.use(morgan('combined'));
 
-// Database connection
-const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/gpa-tracker';
-console.log('Attempting to connect to MongoDB...');
-console.log('Connection string:', mongoUri.replace(/\/\/([^:]+):([^@]+)@/, '//$1:****@')); // Hide password
-
-mongoose.connect(mongoUri)
-    .then(() => console.log('✅ Connected to MongoDB successfully'))
-    .catch(err => {
-        console.error('❌ MongoDB connection error:', err.message);
+// Database connection + migration
+(async () => {
+    try {
+        const client = await pool.connect();
+        console.log('✅ Connected to PostgreSQL successfully');
+        client.release();
+        await migrate();
+    } catch (err) {
+        console.error('❌ PostgreSQL connection error:', err.message);
         console.error('Please check:');
-        console.error('1. MongoDB Atlas cluster is running');
-        console.error('2. Database user credentials are correct');
-        console.error('3. IP whitelist includes your IP');
-        console.error('4. Connection string is valid');
-    });
+        console.error('1. DATABASE_URL environment variable is set');
+        console.error('2. PostgreSQL server is running');
+        console.error('3. Database credentials are correct');
+        console.error('4. Network/firewall allows connection');
+    }
+})();
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -51,7 +53,6 @@ app.get('/api/health', (req, res) => {
 
 // Serve static files from React build in production
 if (process.env.NODE_ENV === 'production') {
-    // Serve static files
     app.use(express.static(path.join(__dirname, '../client/build')));
 }
 
@@ -75,7 +76,6 @@ app.use((err, req, res, next) => {
     console.error('Global error handler:', err);
     console.error('Error stack:', err.stack);
 
-    // Handle specific error types
     if (err.name === 'PasswordStrengthError') {
         return res.status(400).json({
             message: err.message,
@@ -90,18 +90,8 @@ app.use((err, req, res, next) => {
         });
     }
 
-    if (err.name === 'ValidationError') {
-        return res.status(400).json({
-            message: 'Validation error',
-            errors: Object.values(err.errors).map(e => ({
-                field: e.path,
-                message: e.message
-            })),
-            code: 'VALIDATION_ERROR'
-        });
-    }
-
-    if (err.name === 'MongoError' && err.code === 11000) {
+    // Handle Postgres unique constraint violation
+    if (err.code === '23505') {
         return res.status(409).json({
             message: 'Duplicate key error',
             code: 'DUPLICATE_KEY'

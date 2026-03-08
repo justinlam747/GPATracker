@@ -56,8 +56,6 @@ const setRefreshTokenCookie = (res, refreshToken) => {
 };
 
 // @route   POST /api/auth/register
-// @desc    Register a new user
-// @access  Public
 router.post('/register',
     sanitizeInput,
     validate(registerSchema),
@@ -66,45 +64,37 @@ router.post('/register',
             const { email, password, firstName } = req.body;
 
             // Check if user already exists
-            let user = await User.findOne({ email });
-            if (user) {
+            const existing = await User.findByEmail(email);
+            if (existing) {
                 return res.status(409).json({
                     message: 'User already exists',
                     code: 'USER_EXISTS'
                 });
             }
 
-            // Create new user
-            user = new User({
+            // Create new user (handles password hashing + strength check)
+            const { user, verificationToken } = await User.createUser({
                 email,
                 password,
                 firstName,
                 gpaScale: '4.0'
             });
 
-            // Generate email verification token
-            const verificationToken = user.generateEmailVerificationToken();
-
-            await user.save();
-
             // Generate tokens
-            const { accessToken, refreshToken } = generateTokens(user._id);
+            const { accessToken, refreshToken } = generateTokens(user.id);
 
-            // Add refresh token to user
-            const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
-            user.addRefreshToken(refreshToken, expiresAt, req.headers['user-agent'], req.ip);
-            await user.save();
+            // Add refresh token
+            const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+            await User.addRefreshToken(user.id, refreshToken, expiresAt, req.headers['user-agent'], req.ip);
 
             // Set refresh token cookie
             setRefreshTokenCookie(res, refreshToken);
 
-            // TODO: Send verification email with verificationToken
-
             res.status(201).json({
                 message: 'User registered successfully. Please check your email for verification.',
-                accessToken, // Changed from 'token' to 'accessToken'
+                accessToken,
                 user: {
-                    id: user._id,
+                    id: user.id,
                     email: user.email,
                     firstName: user.firstName,
                     lastName: user.lastName,
@@ -117,7 +107,6 @@ router.post('/register',
         } catch (error) {
             console.error('Registration error:', error);
 
-            // Handle specific error types
             if (error.name === 'PasswordStrengthError') {
                 return res.status(400).json({
                     message: error.message,
@@ -132,30 +121,13 @@ router.post('/register',
                 });
             }
 
-            if (error.name === 'ValidationError') {
-                return res.status(400).json({
-                    message: 'Validation failed',
-                    errors: Object.values(error.errors).map(e => ({
-                        field: e.path,
-                        message: e.message
-                    })),
-                    code: 'VALIDATION_ERROR'
-                });
-            }
-
-            if (error.name === 'MongoError' && error.code === 11000) {
+            // Postgres unique constraint violation
+            if (error.code === '23505') {
                 return res.status(409).json({
                     message: 'Email already exists',
                     code: 'EMAIL_EXISTS'
                 });
             }
-
-            // Log the full error for debugging
-            console.error('Full registration error:', {
-                name: error.name,
-                message: error.message,
-                stack: error.stack
-            });
 
             res.status(500).json({
                 message: 'Server error during registration',
@@ -167,8 +139,6 @@ router.post('/register',
 );
 
 // @route   POST /api/auth/login
-// @desc    Authenticate user & get token
-// @access  Public
 router.post('/login',
     sanitizeInput,
     validate(loginSchema),
@@ -176,8 +146,7 @@ router.post('/login',
         try {
             const { email, password } = req.body;
 
-            // Check if user exists
-            const user = await User.findOne({ email });
+            const user = await User.findByEmail(email);
             if (!user) {
                 return res.status(401).json({
                     message: 'Invalid credentials',
@@ -186,8 +155,8 @@ router.post('/login',
             }
 
             // Check if account is locked
-            if (user.isLocked()) {
-                const remainingTime = Math.ceil((user.failedLoginAttempts.lockedUntil - Date.now()) / (1000 * 60));
+            if (User.isLocked(user)) {
+                const remainingTime = Math.ceil((new Date(user.failedLoginAttempts.lockedUntil) - Date.now()) / (1000 * 60));
                 return res.status(423).json({
                     message: `Account is temporarily locked. Try again in ${remainingTime} minutes.`,
                     code: 'ACCOUNT_LOCKED',
@@ -196,12 +165,9 @@ router.post('/login',
             }
 
             // Check password
-            const isMatch = await user.comparePassword(password);
+            const isMatch = await User.comparePassword(user.password, password);
             if (!isMatch) {
-                // Record failed login attempt
-                user.recordFailedLogin();
-                await user.save();
-
+                await User.recordFailedLogin(user.id, user.failedLoginAttempts.count);
                 return res.status(401).json({
                     message: 'Invalid credentials',
                     code: 'INVALID_CREDENTIALS'
@@ -209,16 +175,15 @@ router.post('/login',
             }
 
             // Reset failed login attempts on successful login
-            user.resetFailedLoginAttempts();
-            user.lastLogin = new Date();
+            await User.resetFailedLoginAttempts(user.id);
+            await User.updateUser(user.id, { lastLogin: new Date() });
 
             // Generate tokens
-            const { accessToken, refreshToken } = generateTokens(user._id);
+            const { accessToken, refreshToken } = generateTokens(user.id);
 
-            // Add refresh token to user
-            const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
-            user.addRefreshToken(refreshToken, expiresAt, req.headers['user-agent'], req.ip);
-            await user.save();
+            // Add refresh token
+            const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+            await User.addRefreshToken(user.id, refreshToken, expiresAt, req.headers['user-agent'], req.ip);
 
             // Set refresh token cookie
             setRefreshTokenCookie(res, refreshToken);
@@ -227,7 +192,7 @@ router.post('/login',
                 message: 'Login successful',
                 accessToken,
                 user: {
-                    id: user._id,
+                    id: user.id,
                     email: user.email,
                     firstName: user.firstName,
                     lastName: user.lastName,
@@ -248,8 +213,6 @@ router.post('/login',
 );
 
 // @route   POST /api/auth/refresh
-// @desc    Refresh access token using refresh token
-// @access  Public
 router.post('/refresh',
     verifyRefreshToken,
     async (req, res) => {
@@ -258,15 +221,14 @@ router.post('/refresh',
             const oldRefreshToken = req.refreshToken;
 
             // Generate new tokens
-            const { accessToken, refreshToken } = generateTokens(user._id);
+            const { accessToken, refreshToken } = generateTokens(user.id);
 
             // Revoke old refresh token
-            user.revokeRefreshToken(oldRefreshToken);
+            await User.revokeRefreshToken(user.id, oldRefreshToken);
 
             // Add new refresh token
-            const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
-            user.addRefreshToken(refreshToken, expiresAt, req.headers['user-agent'], req.ip);
-            await user.save();
+            const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+            await User.addRefreshToken(user.id, refreshToken, expiresAt, req.headers['user-agent'], req.ip);
 
             // Set new refresh token cookie
             setRefreshTokenCookie(res, refreshToken);
@@ -275,7 +237,7 @@ router.post('/refresh',
                 message: 'Token refreshed successfully',
                 accessToken,
                 user: {
-                    id: user._id,
+                    id: user.id,
                     email: user.email,
                     firstName: user.firstName,
                     lastName: user.lastName,
@@ -296,20 +258,16 @@ router.post('/refresh',
 );
 
 // @route   POST /api/auth/logout
-// @desc    Logout user and revoke refresh token
-// @access  Private
 router.post('/logout', auth, async (req, res) => {
     try {
         const user = req.user;
-        const accessToken = req.accessToken;
 
         // Revoke the current refresh token
         const cookies = parse(req.headers.cookie || '');
         const refreshToken = cookies.refreshToken;
 
         if (refreshToken) {
-            user.revokeRefreshToken(refreshToken);
-            await user.save();
+            await User.revokeRefreshToken(user.id, refreshToken);
         }
 
         // Clear refresh token cookie
@@ -335,15 +293,9 @@ router.post('/logout', auth, async (req, res) => {
 });
 
 // @route   POST /api/auth/logout-all
-// @desc    Logout user from all devices
-// @access  Private
 router.post('/logout-all', auth, async (req, res) => {
     try {
-        const user = req.user;
-
-        // Revoke all refresh tokens
-        user.revokeAllTokens();
-        await user.save();
+        await User.revokeAllTokens(req.user.id);
 
         // Clear refresh token cookie
         res.setHeader('Set-Cookie', serialize('refreshToken', '', {
@@ -368,11 +320,9 @@ router.post('/logout-all', auth, async (req, res) => {
 });
 
 // @route   GET /api/auth/me
-// @desc    Get current user
-// @access  Private
 router.get('/me', auth, async (req, res) => {
     try {
-        const user = await User.findById(req.user._id).select('-password -refreshTokens');
+        const user = await User.findById(req.user.id, { excludeSecrets: true });
         res.json(user);
     } catch (error) {
         console.error('Get user error:', error);
@@ -384,19 +334,13 @@ router.get('/me', auth, async (req, res) => {
 });
 
 // @route   POST /api/auth/verify-email
-// @desc    Verify email address
-// @access  Public
 router.post('/verify-email',
     validate(emailVerificationSchema),
     async (req, res) => {
         try {
             const { token } = req.body;
 
-            const user = await User.findOne({
-                emailVerificationToken: token,
-                emailVerificationExpires: { $gt: Date.now() }
-            });
-
+            const user = await User.findByVerificationToken(token);
             if (!user) {
                 return res.status(400).json({
                     message: 'Invalid or expired verification token',
@@ -404,10 +348,11 @@ router.post('/verify-email',
                 });
             }
 
-            user.isEmailVerified = true;
-            user.emailVerificationToken = undefined;
-            user.emailVerificationExpires = undefined;
-            await user.save();
+            await User.updateUser(user.id, {
+                isEmailVerified: true,
+                emailVerificationToken: null,
+                emailVerificationExpires: null
+            });
 
             res.json({
                 message: 'Email verified successfully',
@@ -424,26 +369,21 @@ router.post('/verify-email',
 );
 
 // @route   POST /api/auth/forgot-password
-// @desc    Request password reset
-// @access  Public
 router.post('/forgot-password',
     validate(passwordResetRequestSchema),
     async (req, res) => {
         try {
             const { email } = req.body;
 
-            const user = await User.findOne({ email });
+            const user = await User.findByEmail(email);
             if (!user) {
-                // Don't reveal if user exists
                 return res.json({
                     message: 'If an account with that email exists, a password reset link has been sent.',
                     code: 'PASSWORD_RESET_SENT'
                 });
             }
 
-            // Generate password reset token
-            const resetToken = user.generatePasswordResetToken();
-            await user.save();
+            const resetToken = await User.generatePasswordResetToken(user.id);
 
             // Send password reset email
             try {
@@ -455,8 +395,6 @@ router.post('/forgot-password',
                 console.log(`✅ Password reset email sent to: ${user.email}`);
             } catch (emailError) {
                 console.error('❌ Failed to send password reset email:', emailError);
-                // Don't fail the request if email fails - log it instead
-                // This prevents revealing if the user exists
             }
 
             res.json({
@@ -474,19 +412,13 @@ router.post('/forgot-password',
 );
 
 // @route   POST /api/auth/reset-password
-// @desc    Reset password using token
-// @access  Public
 router.post('/reset-password',
     validate(passwordResetSchema),
     async (req, res) => {
         try {
             const { token, password } = req.body;
 
-            const user = await User.findOne({
-                passwordResetToken: token,
-                passwordResetExpires: { $gt: Date.now() }
-            });
-
+            const user = await User.findByResetToken(token);
             if (!user) {
                 return res.status(400).json({
                     message: 'Invalid or expired reset token',
@@ -494,15 +426,17 @@ router.post('/reset-password',
                 });
             }
 
-            // Update password
-            user.password = password;
-            user.passwordResetToken = undefined;
-            user.passwordResetExpires = undefined;
+            // Change password (handles strength + history check)
+            await User.changePassword(user.id, password);
+
+            // Clear reset token
+            await User.updateUser(user.id, {
+                passwordResetToken: null,
+                passwordResetExpires: null
+            });
 
             // Revoke all refresh tokens (force re-login)
-            user.revokeAllTokens();
-
-            await user.save();
+            await User.revokeAllTokens(user.id);
 
             res.json({
                 message: 'Password reset successfully. Please log in with your new password.',
@@ -515,6 +449,13 @@ router.post('/reset-password',
                 return res.status(400).json({
                     message: error.message,
                     code: 'PASSWORD_TOO_WEAK'
+                });
+            }
+
+            if (error.name === 'PasswordReuseError') {
+                return res.status(400).json({
+                    message: error.message,
+                    code: 'PASSWORD_REUSE'
                 });
             }
 

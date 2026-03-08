@@ -1,6 +1,5 @@
 const express = require('express');
 const Course = require('../models/Course');
-const User = require('../models/User');
 const StudyLog = require('../models/StudyLog');
 const { auth } = require('../middleware/auth');
 const { validate, sanitizeInput } = require('../middleware/validation');
@@ -93,10 +92,8 @@ const courseSchema = z.object({
         .default('4.0'),
     isCompleted: z.boolean().optional()
 }).refine((data) => {
-    // Validate assignment weights sum if detailed course has assignments
     if (data.assignments && data.assignments.length > 0) {
         const totalWeight = data.assignments.reduce((sum, a) => sum + (a.weight || 0), 0);
-        // Allow a small floating point tolerance
         if (totalWeight > 0 && Math.abs(totalWeight - 100) > 0.01) {
             return false;
         }
@@ -126,7 +123,7 @@ const courseUpdateSchema = z.object({
     isCompleted: z.boolean().optional()
 });
 
-// ── GPA Calculation (uses model's shouldIncludeInGPA) ───────────────────────
+// ── GPA Calculation ─────────────────────────────────────────────────────────
 
 const calculateGPA = (courses) => {
     const entries = [];
@@ -146,25 +143,13 @@ const calculateGPA = (courses) => {
     return calculateWeightedGPA(entries);
 };
 
-/**
- * Auto-detect gradeInputType from the grade value if not explicitly provided.
- */
 function inferGradeInputType(grade) {
-    if (grade === undefined || grade === null || grade === '') {
-        return 'letter';
-    }
-    if (typeof grade === 'number') {
-        return 'percentage';
-    }
+    if (grade === undefined || grade === null || grade === '') return 'letter';
+    if (typeof grade === 'number') return 'percentage';
     if (typeof grade === 'string') {
-        if (isLetterGrade(grade.trim())) {
-            return 'letter';
-        }
-        // If it parses as a number, it's a percentage
+        if (isLetterGrade(grade.trim())) return 'letter';
         const num = parseFloat(grade);
-        if (!isNaN(num)) {
-            return 'percentage';
-        }
+        if (!isNaN(num)) return 'percentage';
     }
     return 'letter';
 }
@@ -181,7 +166,7 @@ router.post('/courses',
             const { name, code, credits, courseType, grade, gradeInputType, assignments, semester, year, category, notes, gpaScale, isCompleted } = req.body;
 
             const courseData = {
-                user: req.user._id,
+                userId: req.user.id,
                 name,
                 code,
                 credits,
@@ -191,33 +176,27 @@ router.post('/courses',
                 category,
                 notes,
                 gpaScale: gpaScale || '4.0',
-                isCompleted: isCompleted || false
+                isCompleted: isCompleted || false,
+                assignments: assignments || []
             };
 
             // Determine input type explicitly
             if (courseType === 'simple' && grade !== undefined && grade !== '') {
-                courseData.grade = grade;
+                courseData.grade = String(grade);
                 courseData.gradeInputType = gradeInputType || inferGradeInputType(grade);
 
-                // Pre-resolve grade points
                 const resolved = resolveGrade(grade, courseData.gradeInputType, courseData.gpaScale);
                 courseData.gradePoints = resolved.gradePoints;
             }
 
-            // Handle assignments
-            if (assignments && assignments.length > 0) {
-                courseData.assignments = assignments;
-            }
-
             // Handle grade override
             if (req.body.gradeOverride !== undefined) {
-                courseData.gradeOverride = req.body.gradeOverride;
+                courseData.gradeOverride = String(req.body.gradeOverride);
                 const overrideResolved = resolveGradeLegacy(req.body.gradeOverride, courseData.gpaScale);
                 courseData.gradeOverridePoints = overrideResolved.gradePoints;
             }
 
-            const course = new Course(courseData);
-            await course.save();
+            const course = await Course.createCourse(courseData);
 
             res.status(201).json({
                 message: 'Course added successfully',
@@ -238,13 +217,8 @@ router.post('/courses',
 router.get('/courses', auth, async (req, res) => {
     try {
         const { semester, year, category } = req.query;
-        let query = { user: req.user._id };
+        const courses = await Course.findByUser(req.user.id, { semester, year, category });
 
-        if (semester) query.semester = semester;
-        if (year) query.year = parseInt(year);
-        if (category) query.category = category;
-
-        const courses = await Course.find(query).sort({ year: -1, semester: 1, name: 1 });
         res.json({
             courses,
             count: courses.length,
@@ -262,7 +236,7 @@ router.get('/courses', auth, async (req, res) => {
 // GET /api/gpa/courses/:id - Get a single course
 router.get('/courses/:id', auth, async (req, res) => {
     try {
-        const course = await Course.findOne({ _id: req.params.id, user: req.user._id });
+        const course = await Course.findById(req.params.id, req.user.id);
         if (!course) {
             return res.status(404).json({
                 message: 'Course not found',
@@ -286,9 +260,8 @@ router.get('/courses/:id', auth, async (req, res) => {
 // GET /api/gpa/summary - GPA summary for a user
 router.get('/summary', auth, async (req, res) => {
     try {
-        const courses = await Course.find({ user: req.user._id });
+        const courses = await Course.findByUser(req.user.id);
 
-        // Overall GPA — uses shouldIncludeInGPA (checks isCompleted + excludes W/I/P/NP)
         const overallGPA = calculateGPA(courses);
 
         // GPA by semester
@@ -312,7 +285,6 @@ router.get('/summary', auth, async (req, res) => {
             categoryGPAs[cat] = calculateGPA(categoryCourses);
         }
 
-        // Total credits (only from GPA-eligible courses)
         const totalCredits = courses
             .filter(c => c.shouldIncludeInGPA())
             .reduce((sum, c) => sum + c.credits, 0);
@@ -341,25 +313,31 @@ router.put('/courses/:id',
     validate(courseUpdateSchema),
     async (req, res) => {
         try {
-            const course = await Course.findOne({ _id: req.params.id, user: req.user._id });
+            // If grade is being updated, resolve gradeInputType
+            if (req.body.grade !== undefined) {
+                const inputType = req.body.gradeInputType || inferGradeInputType(req.body.grade);
+                req.body.gradeInputType = inputType;
+
+                // Need current course to get gpaScale if not provided
+                const existing = await Course.findById(req.params.id, req.user.id);
+                if (!existing) {
+                    return res.status(404).json({
+                        message: 'Course not found',
+                        code: 'COURSE_NOT_FOUND'
+                    });
+                }
+                const resolved = resolveGrade(req.body.grade, inputType, req.body.gpaScale || existing.gpaScale);
+                req.body.gradePoints = resolved.gradePoints;
+                req.body.grade = String(req.body.grade);
+            }
+
+            const course = await Course.updateCourse(req.params.id, req.user.id, req.body);
             if (!course) {
                 return res.status(404).json({
                     message: 'Course not found',
                     code: 'COURSE_NOT_FOUND'
                 });
             }
-
-            // If grade is being updated, resolve gradeInputType
-            if (req.body.grade !== undefined) {
-                const inputType = req.body.gradeInputType || inferGradeInputType(req.body.grade);
-                req.body.gradeInputType = inputType;
-                const resolved = resolveGrade(req.body.grade, inputType, req.body.gpaScale || course.gpaScale);
-                req.body.gradePoints = resolved.gradePoints;
-            }
-
-            // Apply updates
-            Object.assign(course, req.body);
-            await course.save();
 
             res.json({
                 message: 'Course updated successfully',
@@ -379,8 +357,7 @@ router.put('/courses/:id',
 // DELETE /api/gpa/courses/:id - Delete a course
 router.delete('/courses/:id', auth, async (req, res) => {
     try {
-        const course = await Course.findOneAndDelete({ _id: req.params.id, user: req.user._id });
-
+        const course = await Course.deleteCourse(req.params.id, req.user.id);
         if (!course) {
             return res.status(404).json({
                 message: 'Course not found',
@@ -424,23 +401,26 @@ router.post('/courses/bulk',
                     const courseData = courses[i];
 
                     if (!courseData.name || !courseData.credits) {
-                        errors.push({
-                            index: i,
-                            error: 'Missing required fields: name and credits are required'
-                        });
+                        errors.push({ index: i, error: 'Missing required fields: name and credits are required' });
                         continue;
                     }
 
                     const inputType = courseData.gradeInputType || inferGradeInputType(courseData.grade);
+                    let gradePoints = null;
+                    if (courseData.grade !== undefined && courseData.grade !== '') {
+                        const resolved = resolveGrade(courseData.grade, inputType, courseData.gpaScale || '4.0');
+                        gradePoints = resolved.gradePoints;
+                    }
 
-                    const course = new Course({
-                        user: req.user._id,
+                    const course = await Course.createCourse({
+                        userId: req.user.id,
                         name: courseData.name,
                         code: courseData.code || '',
                         credits: courseData.credits,
                         courseType: 'simple',
-                        grade: courseData.grade,
+                        grade: courseData.grade != null ? String(courseData.grade) : null,
                         gradeInputType: inputType,
+                        gradePoints,
                         semester: courseData.semester || 'Fall',
                         year: courseData.year || new Date().getFullYear(),
                         category: courseData.category || 'General',
@@ -449,13 +429,9 @@ router.post('/courses/bulk',
                         isCompleted: courseData.isCompleted || false
                     });
 
-                    await course.save();
                     importedCourses.push(course);
                 } catch (error) {
-                    errors.push({
-                        index: i,
-                        error: error.message
-                    });
+                    errors.push({ index: i, error: error.message });
                 }
             }
 
@@ -482,31 +458,36 @@ router.post('/courses/:id/assignments',
     validate(assignmentSchema),
     async (req, res) => {
         try {
-            const course = await Course.findOne({ _id: req.params.id, user: req.user._id });
-            if (!course) {
+            // Check total weight before adding
+            const existing = await Course.findById(req.params.id, req.user.id);
+            if (!existing) {
                 return res.status(404).json({
                     message: 'Course not found',
                     code: 'COURSE_NOT_FOUND'
                 });
             }
 
-            course.assignments.push(req.body);
-
-            // Validate total weight doesn't exceed 100
-            const totalWeight = course.assignments.reduce((sum, a) => sum + (a.weight || 0), 0);
-            if (totalWeight > 100.01) {
+            const currentWeight = (existing.assignments || []).reduce((sum, a) => sum + (a.weight || 0), 0);
+            const newWeight = currentWeight + (req.body.weight || 0);
+            if (newWeight > 100.01) {
                 return res.status(400).json({
-                    message: `Total assignment weight would be ${totalWeight.toFixed(1)}%, which exceeds 100%`,
+                    message: `Total assignment weight would be ${newWeight.toFixed(1)}%, which exceeds 100%`,
                     code: 'WEIGHT_EXCEEDS_100'
                 });
             }
 
-            await course.save();
+            const result = await Course.addAssignment(req.params.id, req.user.id, req.body);
+            if (!result) {
+                return res.status(404).json({
+                    message: 'Course not found',
+                    code: 'COURSE_NOT_FOUND'
+                });
+            }
 
             res.status(201).json({
                 message: 'Assignment added successfully',
-                assignment: course.assignments[course.assignments.length - 1],
-                course,
+                assignment: result.assignment,
+                course: result.course,
                 code: 'ASSIGNMENT_ADDED'
             });
         } catch (error) {
@@ -526,26 +507,16 @@ router.put('/courses/:id/assignments/:assignmentId',
     validate(assignmentSchema),
     async (req, res) => {
         try {
-            const course = await Course.findOne({ _id: req.params.id, user: req.user._id });
-            if (!course) {
+            const result = await Course.updateAssignment(req.params.id, req.params.assignmentId, req.user.id, req.body);
+            if (!result) {
                 return res.status(404).json({
-                    message: 'Course not found',
-                    code: 'COURSE_NOT_FOUND'
+                    message: 'Course or assignment not found',
+                    code: 'NOT_FOUND'
                 });
             }
 
-            const assignment = course.assignments.id(req.params.assignmentId);
-            if (!assignment) {
-                return res.status(404).json({
-                    message: 'Assignment not found',
-                    code: 'ASSIGNMENT_NOT_FOUND'
-                });
-            }
-
-            Object.assign(assignment, req.body);
-
-            // Validate total weight
-            const totalWeight = course.assignments.reduce((sum, a) => sum + (a.weight || 0), 0);
+            // Check total weight after update
+            const totalWeight = (result.course.assignments || []).reduce((sum, a) => sum + (a.weight || 0), 0);
             if (totalWeight > 100.01) {
                 return res.status(400).json({
                     message: `Total assignment weight would be ${totalWeight.toFixed(1)}%, which exceeds 100%`,
@@ -553,12 +524,10 @@ router.put('/courses/:id/assignments/:assignmentId',
                 });
             }
 
-            await course.save();
-
             res.json({
                 message: 'Assignment updated successfully',
-                assignment,
-                course,
+                assignment: result.assignment,
+                course: result.course,
                 code: 'ASSIGNMENT_UPDATED'
             });
         } catch (error) {
@@ -576,28 +545,17 @@ router.delete('/courses/:id/assignments/:assignmentId',
     auth,
     async (req, res) => {
         try {
-            const course = await Course.findOne({ _id: req.params.id, user: req.user._id });
-            if (!course) {
+            const result = await Course.deleteAssignment(req.params.id, req.params.assignmentId, req.user.id);
+            if (!result) {
                 return res.status(404).json({
-                    message: 'Course not found',
-                    code: 'COURSE_NOT_FOUND'
+                    message: 'Course or assignment not found',
+                    code: 'NOT_FOUND'
                 });
             }
-
-            const assignment = course.assignments.id(req.params.assignmentId);
-            if (!assignment) {
-                return res.status(404).json({
-                    message: 'Assignment not found',
-                    code: 'ASSIGNMENT_NOT_FOUND'
-                });
-            }
-
-            assignment.deleteOne();
-            await course.save();
 
             res.json({
                 message: 'Assignment removed successfully',
-                course,
+                course: result.course,
                 code: 'ASSIGNMENT_REMOVED'
             });
         } catch (error) {
@@ -624,20 +582,19 @@ router.put('/courses/:id/grade-override',
                 });
             }
 
-            const course = await Course.findOne({ _id: req.params.id, user: req.user._id });
-            if (!course) {
+            const existing = await Course.findById(req.params.id, req.user.id);
+            if (!existing) {
                 return res.status(404).json({
                     message: 'Course not found',
                     code: 'COURSE_NOT_FOUND'
                 });
             }
 
-            // Resolve override using centralized conversion
-            course.gradeOverride = gradeOverride;
-            const resolved = resolveGradeLegacy(gradeOverride, course.gpaScale);
-            course.gradeOverridePoints = resolved.gradePoints;
-
-            await course.save();
+            const resolved = resolveGradeLegacy(gradeOverride, existing.gpaScale);
+            const course = await Course.updateCourse(req.params.id, req.user.id, {
+                gradeOverride: String(gradeOverride),
+                gradeOverridePoints: resolved.gradePoints
+            });
 
             res.json({
                 message: 'Grade override set successfully',
@@ -660,18 +617,16 @@ router.post('/courses/:id/revert-override',
     sanitizeInput,
     async (req, res) => {
         try {
-            const course = await Course.findOne({ _id: req.params.id, user: req.user._id });
+            const course = await Course.updateCourse(req.params.id, req.user.id, {
+                gradeOverride: null,
+                gradeOverridePoints: null
+            });
             if (!course) {
                 return res.status(404).json({
                     message: 'Course not found',
                     code: 'COURSE_NOT_FOUND'
                 });
             }
-
-            course.gradeOverride = undefined;
-            course.gradeOverridePoints = undefined;
-
-            await course.save();
 
             res.json({
                 message: 'Grade override reverted successfully',
@@ -693,19 +648,13 @@ router.put('/courses/:id/personal', auth, async (req, res) => {
     try {
         const { studyHours, difficultyRating, personalNotes, targetGrade } = req.body;
 
-        const course = await Course.findOneAndUpdate(
-            { _id: req.params.id, user: req.user._id },
-            {
-                $set: {
-                    ...(studyHours !== undefined && { studyHours }),
-                    ...(difficultyRating !== undefined && { difficultyRating }),
-                    ...(personalNotes !== undefined && { personalNotes }),
-                    ...(targetGrade !== undefined && { targetGrade })
-                }
-            },
-            { new: true, runValidators: true }
-        );
+        const updates = {};
+        if (studyHours !== undefined) updates.studyHours = studyHours;
+        if (difficultyRating !== undefined) updates.difficultyRating = difficultyRating;
+        if (personalNotes !== undefined) updates.personalNotes = personalNotes;
+        if (targetGrade !== undefined) updates.targetGrade = targetGrade;
 
+        const course = await Course.updateCourse(req.params.id, req.user.id, updates);
         if (!course) {
             return res.status(404).json({ error: 'Course not found' });
         }
@@ -720,9 +669,8 @@ router.put('/courses/:id/personal', auth, async (req, res) => {
 // GET /api/gpa/dashboard-analytics
 router.get('/dashboard-analytics', auth, async (req, res) => {
     try {
-        const courses = await Course.find({ user: req.user._id });
+        const courses = await Course.findByUser(req.user.id);
 
-        // Use proper weighted GPA calculation
         const gpaEntries = [];
         for (const course of courses) {
             if (course.shouldIncludeInGPA()) {
@@ -743,7 +691,7 @@ router.get('/dashboard-analytics', auth, async (req, res) => {
             studyHoursTotal: courses.reduce((sum, course) => sum + (course.studyHours || 0), 0)
         };
 
-        // Semester breakdown with proper weighted GPA
+        // Semester breakdown
         for (const course of courses) {
             const semester = `${course.semester} ${course.year}`;
             if (!analytics.semesterBreakdown[semester]) {
@@ -764,10 +712,10 @@ router.get('/dashboard-analytics', auth, async (req, res) => {
         for (const key of Object.keys(analytics.semesterBreakdown)) {
             const bd = analytics.semesterBreakdown[key];
             bd.averageGPA = calculateWeightedGPA(bd.entries);
-            delete bd.entries; // Don't send raw entries to client
+            delete bd.entries;
         }
 
-        // Category breakdown with proper weighted GPA
+        // Category breakdown
         for (const course of courses) {
             const category = course.category || 'General';
             if (!analytics.categoryBreakdown[category]) {
@@ -807,20 +755,19 @@ router.post('/study-logs', auth, async (req, res) => {
             return res.status(400).json({ error: 'Course ID, hours, and date are required' });
         }
 
-        const course = await Course.findOne({ _id: courseId, user: req.user._id });
+        const course = await Course.findById(courseId, req.user.id);
         if (!course) {
             return res.status(404).json({ error: 'Course not found' });
         }
 
-        const studyLog = new StudyLog({
-            user: req.user._id,
-            course: courseId,
+        const studyLog = await StudyLog.create({
+            userId: req.user.id,
+            courseId,
             hours: parseFloat(hours),
             date: new Date(date),
             notes: notes || ''
         });
 
-        await studyLog.save();
         res.status(201).json({ success: true, studyLog });
     } catch (error) {
         console.error('Error creating study log:', error);
@@ -831,10 +778,7 @@ router.post('/study-logs', auth, async (req, res) => {
 // GET /api/gpa/study-logs
 router.get('/study-logs', auth, async (req, res) => {
     try {
-        const studyLogs = await StudyLog.find({ user: req.user._id })
-            .sort({ date: -1 })
-            .limit(50);
-
+        const studyLogs = await StudyLog.findByUser(req.user.id, 50);
         res.json({ success: true, studyLogs });
     } catch (error) {
         console.error('Error fetching study logs:', error);

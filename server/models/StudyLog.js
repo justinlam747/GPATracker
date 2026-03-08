@@ -1,46 +1,34 @@
-const mongoose = require('mongoose');
+const { query } = require('../db/pool');
 
-const studyLogSchema = new mongoose.Schema({
-    user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-    },
-    course: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Course',
-        required: true
-    },
-    hours: {
-        type: Number,
-        required: true,
-        min: 0,
-        max: 24
-    },
-    date: {
-        type: Date,
-        required: true,
-        default: Date.now
-    },
-    notes: {
-        type: String,
-        trim: true,
-        maxlength: 500
-    }
-}, { timestamps: true });
+function rowToStudyLog(row) {
+    if (!row) return null;
+    return {
+        _id: row.id,
+        id: row.id,
+        user: row.user_id,
+        course: row.course_id,
+        hours: parseFloat(row.hours),
+        date: row.date,
+        notes: row.notes,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at
+    };
+}
 
-// Index for efficient queries
-studyLogSchema.index({ user: 1, date: -1 });
-studyLogSchema.index({ user: 1, course: 1 });
+async function create({ userId, courseId, hours, date, notes }) {
+    const { rows } = await query(`
+        INSERT INTO study_logs (user_id, course_id, hours, date, notes)
+        VALUES ($1, $2, $3, $4, $5) RETURNING *
+    `, [userId, courseId, hours, date, notes || '']);
+    return rowToStudyLog(rows[0]);
+}
 
-module.exports = mongoose.model('StudyLog', studyLogSchema);
+async function findByUser(userId, limit = 50) {
+    const { rows } = await query(
+        'SELECT * FROM study_logs WHERE user_id = $1 ORDER BY date DESC LIMIT $2',
+        [userId, limit]
+    );
+    return rows.map(rowToStudyLog);
+}
 
-
-
-
-
-
-
-
-
-
+module.exports = { create, findByUser, rowToStudyLog };
