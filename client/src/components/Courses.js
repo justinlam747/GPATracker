@@ -7,7 +7,8 @@ import api from '../utils/api';
 import {
     BookOpen, Search, Filter, Eye, Plus, Target, TrendingUp, Award,
     ChevronDown, ChevronUp, RefreshCw, GraduationCap, Trash2, ArrowLeft,
-    Grid3X3, List, X, Menu, Calendar, BarChart3, Settings, User
+    Grid3X3, List, X, Menu, Calendar, BarChart3, Settings, User,
+    Upload, FileText, Layout
 } from 'lucide-react';
 
 // Memoized stat card — only re-renders when its props change
@@ -262,6 +263,16 @@ const Courses = () => {
                         <button onClick={() => setIsAddCourseModalOpen(true)} className="w-full flex items-center space-x-3 px-3 py-2 bg-honolulu_blue hover:bg-blue_green text-white font-medium rounded-lg transition-colors">
                             <Plus className="h-5 w-5" /><span>Add Course</span>
                         </button>
+                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-4">IMPORT TOOLS</div>
+                        <Link to="/import/transcript" className="w-full flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
+                            <Upload className="h-5 w-5" /><span>Import Transcript</span>
+                        </Link>
+                        <Link to="/import/syllabus" className="w-full flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
+                            <FileText className="h-5 w-5" /><span>Import Syllabus</span>
+                        </Link>
+                        <Link to="/import/templates" className="w-full flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
+                            <Layout className="h-5 w-5" /><span>Course Templates</span>
+                        </Link>
                     </div>
 
                     <div className="mt-auto pt-6 border-t border-gray-200">

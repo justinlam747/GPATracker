@@ -18,6 +18,9 @@ const Settings = lazy(() => import('./components/Settings'));
 const AccountSettings = lazy(() => import('./components/AccountSettings'));
 const TermsOfService = lazy(() => import('./components/TermsOfService'));
 const PrivacyPolicy = lazy(() => import('./components/PrivacyPolicy'));
+const TranscriptImport = lazy(() => import('./components/TranscriptImport'));
+const SyllabusImport = lazy(() => import('./components/SyllabusImport'));
+const CourseSchemaSearch = lazy(() => import('./components/CourseSchemaSearch'));
 
 // Loading fallback
 const PageLoader = () => (
@@ -55,6 +58,13 @@ function App() {
                             <Route path="/calendar" element={<ProtectedRoute><AppLayout showNavbar={false}><Calendar /></AppLayout></ProtectedRoute>} />
                             <Route path="/settings" element={<ProtectedRoute><AppLayout showNavbar={false}><Settings /></AppLayout></ProtectedRoute>} />
                             <Route path="/account" element={<ProtectedRoute><AppLayout showNavbar={false}><AccountSettings /></AppLayout></ProtectedRoute>} />
+
+                            {/* Import tools */}
+                            <Route path="/import/transcript" element={<ProtectedRoute><AppLayout showNavbar={false}><TranscriptImport /></AppLayout></ProtectedRoute>} />
+                            <Route path="/import/syllabus" element={<ProtectedRoute><AppLayout showNavbar={false}><SyllabusImport /></AppLayout></ProtectedRoute>} />
+                            <Route path="/import/syllabus/:courseId" element={<ProtectedRoute><AppLayout showNavbar={false}><SyllabusImport /></AppLayout></ProtectedRoute>} />
+                            <Route path="/import/templates" element={<ProtectedRoute><AppLayout showNavbar={false}><CourseSchemaSearch /></AppLayout></ProtectedRoute>} />
+                            <Route path="/import/templates/:courseId" element={<ProtectedRoute><AppLayout showNavbar={false}><CourseSchemaSearch /></AppLayout></ProtectedRoute>} />
 
                             {/* Legal Pages */}
                             <Route path="/terms-of-service" element={<TermsOfService />} />

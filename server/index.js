@@ -9,6 +9,7 @@ const { applySecurityMiddleware } = require('./middleware/security');
 const authRoutes = require('./routes/auth');
 const gpaRoutes = require('./routes/gpa');
 const userRoutes = require('./routes/user');
+const importRoutes = require('./routes/import');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -40,6 +41,7 @@ app.use(morgan('combined'));
 app.use('/api/auth', authRoutes);
 app.use('/api/gpa', gpaRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/import', importRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
