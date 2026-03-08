@@ -10,6 +10,7 @@ const authRoutes = require('./routes/auth');
 const gpaRoutes = require('./routes/gpa');
 const userRoutes = require('./routes/user');
 const importRoutes = require('./routes/import');
+const chatRoutes = require('./routes/chat');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -42,6 +43,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/gpa', gpaRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/import', importRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

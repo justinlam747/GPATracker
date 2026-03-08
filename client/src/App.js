@@ -21,6 +21,7 @@ const PrivacyPolicy = lazy(() => import('./components/PrivacyPolicy'));
 const TranscriptImport = lazy(() => import('./components/TranscriptImport'));
 const SyllabusImport = lazy(() => import('./components/SyllabusImport'));
 const CourseSchemaSearch = lazy(() => import('./components/CourseSchemaSearch'));
+const ChatAgent = lazy(() => import('./components/ChatAgent'));
 
 // Loading fallback
 const PageLoader = () => (
@@ -65,6 +66,9 @@ function App() {
                             <Route path="/import/syllabus/:courseId" element={<ProtectedRoute><AppLayout showNavbar={false}><SyllabusImport /></AppLayout></ProtectedRoute>} />
                             <Route path="/import/templates" element={<ProtectedRoute><AppLayout showNavbar={false}><CourseSchemaSearch /></AppLayout></ProtectedRoute>} />
                             <Route path="/import/templates/:courseId" element={<ProtectedRoute><AppLayout showNavbar={false}><CourseSchemaSearch /></AppLayout></ProtectedRoute>} />
+
+                            {/* AI Agent */}
+                            <Route path="/chat" element={<ProtectedRoute><AppLayout showNavbar={false}><ChatAgent /></AppLayout></ProtectedRoute>} />
 
                             {/* Legal Pages */}
                             <Route path="/terms-of-service" element={<TermsOfService />} />

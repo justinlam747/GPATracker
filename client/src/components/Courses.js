@@ -8,7 +8,7 @@ import {
     BookOpen, Search, Filter, Eye, Plus, Target, TrendingUp, Award,
     ChevronDown, ChevronUp, RefreshCw, GraduationCap, Trash2, ArrowLeft,
     Grid3X3, List, X, Menu, Calendar, BarChart3, Settings, User,
-    Upload, FileText, Layout
+    Upload, FileText, Layout, Sparkles
 } from 'lucide-react';
 
 // Memoized stat card — only re-renders when its props change
@@ -272,6 +272,10 @@ const Courses = () => {
                         </Link>
                         <Link to="/import/templates" className="w-full flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
                             <Layout className="h-5 w-5" /><span>Course Templates</span>
+                        </Link>
+                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-4">AI ASSISTANT</div>
+                        <Link to="/chat" className="w-full flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
+                            <Sparkles className="h-5 w-5" /><span>GPA Buddy</span>
                         </Link>
                     </div>
 
