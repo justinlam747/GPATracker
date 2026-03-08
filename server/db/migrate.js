@@ -130,6 +130,8 @@ async function migrate() {
         'CREATE INDEX IF NOT EXISTS idx_assignments_course_id ON assignments(course_id)',
         'CREATE INDEX IF NOT EXISTS idx_study_logs_user_date ON study_logs(user_id, date DESC)',
         'CREATE INDEX IF NOT EXISTS idx_study_logs_user_course ON study_logs(user_id, course_id)',
+        'CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user_revoked ON refresh_tokens(user_id, revoked) WHERE revoked = false',
+        'CREATE INDEX IF NOT EXISTS idx_users_is_active ON users(id) WHERE is_active = true',
     ];
 
     for (const idx of indexes) {

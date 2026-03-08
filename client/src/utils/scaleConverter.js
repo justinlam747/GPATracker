@@ -161,3 +161,18 @@ export const getGradeColor = (percentage) => {
     if (numPercentage >= 60) return 'bg-orange-100 text-orange-800';
     return 'bg-red-100 text-red-800';
 };
+
+/**
+ * Get grade color based on letter grade string (A, B+, etc).
+ * Shared across Courses, Dashboard, CourseDetail.
+ */
+export const getGradeColorByLetter = (grade) => {
+    if (!grade || typeof grade !== 'string') return 'bg-gray-100 text-gray-800';
+    const g = grade.trim();
+    if (g.startsWith('A')) return 'bg-green-100 text-green-800';
+    if (g.startsWith('B')) return 'bg-blue-100 text-blue-800';
+    if (g.startsWith('C')) return 'bg-yellow-100 text-yellow-800';
+    if (g.startsWith('D')) return 'bg-orange-100 text-orange-800';
+    if (g === 'F') return 'bg-red-100 text-red-800';
+    return 'bg-gray-100 text-gray-800';
+};

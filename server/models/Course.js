@@ -1,4 +1,4 @@
-const { query, getClient } = require('../db/pool');
+const { query } = require('../db/pool');
 const {
     resolveGrade,
     resolveGradeLegacy,
@@ -67,7 +67,7 @@ function rowToAssignment(row) {
     };
 }
 
-// ── Grade calculation helpers (ported from Mongoose pre-save) ────────────────
+// ── Grade calculation helpers ────────────────────────────────────────────────
 
 function calculateFinalGradeFromAssignments(assignments, gpaScale) {
     if (!assignments || assignments.length === 0) return {};
@@ -145,14 +145,103 @@ function shouldIncludeInGPA(course) {
     return true;
 }
 
-// Attach methods to course objects for backward compatibility
 function attachMethods(course) {
     course.getFinalGrade = () => resolveCourseFinalGrade(course);
     course.shouldIncludeInGPA = () => shouldIncludeInGPA(course);
     return course;
 }
 
+// ── JOIN-based queries (eliminates N+1) ──────────────────────────────────────
+
+// Single query: fetch course(s) with all assignments via LEFT JOIN
+const COURSE_WITH_ASSIGNMENTS_COLS = `
+    c.id, c.user_id, c.name, c.code, c.credits, c.course_type,
+    c.grade, c.grade_input_type, c.grade_override, c.grade_override_points,
+    c.calculated_grade, c.calculated_grade_points, c.calculated_grade_letter,
+    c.final_grade, c.grade_points, c.semester, c.year, c.category, c.notes,
+    c.gpa_scale, c.study_hours, c.difficulty_rating, c.personal_notes,
+    c.target_grade, c.is_completed, c.created_at, c.updated_at,
+    a.id AS a_id, a.name AS a_name, a.type AS a_type, a.weight AS a_weight,
+    a.grade AS a_grade, a.max_grade AS a_max_grade, a.due_date AS a_due_date,
+    a.notes AS a_notes, a.is_completed AS a_is_completed,
+    a.created_at AS a_created_at, a.updated_at AS a_updated_at
+`;
+
+function groupJoinRows(rows) {
+    const courseMap = new Map();
+    for (const row of rows) {
+        if (!courseMap.has(row.id)) {
+            courseMap.set(row.id, { courseRow: row, assignmentRows: [] });
+        }
+        if (row.a_id) {
+            courseMap.get(row.id).assignmentRows.push({
+                id: row.a_id,
+                name: row.a_name,
+                type: row.a_type,
+                weight: row.a_weight,
+                grade: row.a_grade,
+                max_grade: row.a_max_grade,
+                due_date: row.a_due_date,
+                notes: row.a_notes,
+                is_completed: row.a_is_completed,
+                created_at: row.a_created_at,
+                updated_at: row.a_updated_at
+            });
+        }
+    }
+    return courseMap;
+}
+
 // ── CRUD ─────────────────────────────────────────────────────────────────────
+
+async function findById(id, userId) {
+    const { rows } = await query(`
+        SELECT ${COURSE_WITH_ASSIGNMENTS_COLS}
+        FROM courses c
+        LEFT JOIN assignments a ON a.course_id = c.id
+        WHERE c.id = $1 AND c.user_id = $2
+        ORDER BY a.created_at ASC
+    `, [id, userId]);
+
+    if (rows.length === 0) return null;
+    const courseMap = groupJoinRows(rows);
+    const entry = courseMap.get(rows[0].id);
+    return attachMethods(rowToCourse(entry.courseRow, entry.assignmentRows));
+}
+
+async function findByUser(userId, filters = {}) {
+    let where = 'c.user_id = $1';
+    const params = [userId];
+    let i = 2;
+
+    if (filters.semester) {
+        where += ` AND c.semester = $${i++}`;
+        params.push(filters.semester);
+    }
+    if (filters.year) {
+        where += ` AND c.year = $${i++}`;
+        params.push(parseInt(filters.year));
+    }
+    if (filters.category) {
+        where += ` AND c.category = $${i++}`;
+        params.push(filters.category);
+    }
+
+    const { rows } = await query(`
+        SELECT ${COURSE_WITH_ASSIGNMENTS_COLS}
+        FROM courses c
+        LEFT JOIN assignments a ON a.course_id = c.id
+        WHERE ${where}
+        ORDER BY c.year DESC, c.semester ASC, c.name ASC, a.created_at ASC
+    `, params);
+
+    const courseMap = groupJoinRows(rows);
+    const courses = [];
+    for (const [, entry] of courseMap) {
+        courses.push(attachMethods(rowToCourse(entry.courseRow, entry.assignmentRows)));
+    }
+    return courses;
+}
 
 async function getAssignmentsForCourse(courseId) {
     const { rows } = await query(
@@ -162,42 +251,13 @@ async function getAssignmentsForCourse(courseId) {
     return rows;
 }
 
-async function findById(id, userId) {
-    const { rows } = await query('SELECT * FROM courses WHERE id = $1 AND user_id = $2', [id, userId]);
-    if (rows.length === 0) return null;
-    const assignments = await getAssignmentsForCourse(id);
-    return attachMethods(rowToCourse(rows[0], assignments));
-}
-
-async function findByUser(userId, filters = {}) {
-    let sql = 'SELECT * FROM courses WHERE user_id = $1';
-    const params = [userId];
-    let i = 2;
-
-    if (filters.semester) {
-        sql += ` AND semester = $${i++}`;
-        params.push(filters.semester);
-    }
-    if (filters.year) {
-        sql += ` AND year = $${i++}`;
-        params.push(parseInt(filters.year));
-    }
-    if (filters.category) {
-        sql += ` AND category = $${i++}`;
-        params.push(filters.category);
-    }
-
-    sql += ' ORDER BY year DESC, semester ASC, name ASC';
-
-    const { rows } = await query(sql, params);
-
-    // Load assignments for all courses
-    const courses = [];
-    for (const row of rows) {
-        const assignments = await getAssignmentsForCourse(row.id);
-        courses.push(attachMethods(rowToCourse(row, assignments)));
-    }
-    return courses;
+// Lightweight existence check — avoids loading assignments
+async function courseExists(id, userId) {
+    const { rows } = await query(
+        'SELECT id, gpa_scale FROM courses WHERE id = $1 AND user_id = $2',
+        [id, userId]
+    );
+    return rows[0] || null;
 }
 
 async function createCourse(courseData) {
@@ -227,6 +287,8 @@ async function createCourse(courseData) {
         gpaScale, isCompleted
     ]);
 
+    const courseId = rows[0].id;
+
     // Insert assignments if provided
     const assignments = courseData.assignments || [];
     const insertedAssignments = [];
@@ -234,35 +296,32 @@ async function createCourse(courseData) {
         const aResult = await query(`
             INSERT INTO assignments (course_id, name, type, weight, grade, max_grade, due_date, notes, is_completed)
             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *
-        `, [rows[0].id, a.name, a.type || 'Assignment', a.weight || 0, String(a.grade), a.maxGrade || 100, a.dueDate || null, a.notes || null, a.isCompleted || false]);
+        `, [courseId, a.name, a.type || 'Assignment', a.weight || 0, String(a.grade), a.maxGrade || 100, a.dueDate || null, a.notes || null, a.isCompleted || false]);
         insertedAssignments.push(aResult.rows[0]);
     }
 
-    // If there are assignments, calculate grades and update the course
+    // If there are assignments, calculate and update in one shot
     if (insertedAssignments.length > 0) {
         const mapped = insertedAssignments.map(rowToAssignment);
         const calc = calculateFinalGradeFromAssignments(mapped, gpaScale);
         if (calc.calculatedGrade != null) {
-            await query(`
+            const { rows: updated } = await query(`
                 UPDATE courses SET
-                    calculated_grade = $1,
-                    calculated_grade_points = $2,
-                    calculated_grade_letter = $3,
-                    updated_at = NOW()
-                WHERE id = $4
-            `, [calc.calculatedGrade, calc.calculatedGradePoints, calc.calculatedGradeLetter, rows[0].id]);
+                    calculated_grade = $1, calculated_grade_points = $2,
+                    calculated_grade_letter = $3, updated_at = NOW()
+                WHERE id = $4 RETURNING *
+            `, [calc.calculatedGrade, calc.calculatedGradePoints, calc.calculatedGradeLetter, courseId]);
+            return attachMethods(rowToCourse(updated[0], insertedAssignments));
         }
     }
 
-    const allAssignments = await getAssignmentsForCourse(rows[0].id);
-    // Re-fetch to get updated calculated fields
-    const { rows: updated } = await query('SELECT * FROM courses WHERE id = $1', [rows[0].id]);
-    return attachMethods(rowToCourse(updated[0], allAssignments));
+    return attachMethods(rowToCourse(rows[0], insertedAssignments));
 }
 
 async function updateCourse(id, userId, updates) {
-    const course = await findById(id, userId);
-    if (!course) return null;
+    // Lightweight check instead of full findById with JOIN
+    const existing = await courseExists(id, userId);
+    if (!existing) return null;
 
     const fieldMap = {
         name: 'name', code: 'code', credits: 'credits',
@@ -294,40 +353,36 @@ async function updateCourse(id, userId, updates) {
 
     // Handle assignments update
     if (updates.assignments !== undefined) {
-        // Delete existing assignments and re-insert
         await query('DELETE FROM assignments WHERE course_id = $1', [id]);
+        const insertedAssignments = [];
         for (const a of updates.assignments) {
-            await query(`
+            const aResult = await query(`
                 INSERT INTO assignments (course_id, name, type, weight, grade, max_grade, due_date, notes, is_completed)
-                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *
             `, [id, a.name, a.type || 'Assignment', a.weight || 0, String(a.grade), a.maxGrade || 100, a.dueDate || null, a.notes || null, a.isCompleted || false]);
+            insertedAssignments.push(aResult.rows[0]);
         }
 
-        // Recalculate
-        const allAssignments = await getAssignmentsForCourse(id);
-        const mapped = allAssignments.map(rowToAssignment);
-        const calc = calculateFinalGradeFromAssignments(mapped, updates.gpaScale || course.gpaScale);
-        if (calc.calculatedGrade != null) {
-            setClauses.push(`calculated_grade = $${i}`); values.push(calc.calculatedGrade); i++;
-            setClauses.push(`calculated_grade_points = $${i}`); values.push(calc.calculatedGradePoints); i++;
-            setClauses.push(`calculated_grade_letter = $${i}`); values.push(calc.calculatedGradeLetter); i++;
-        }
+        const mapped = insertedAssignments.map(rowToAssignment);
+        const calc = calculateFinalGradeFromAssignments(mapped, updates.gpaScale || existing.gpa_scale);
+        setClauses.push(`calculated_grade = $${i}`); values.push(calc.calculatedGrade || null); i++;
+        setClauses.push(`calculated_grade_points = $${i}`); values.push(calc.calculatedGradePoints || null); i++;
+        setClauses.push(`calculated_grade_letter = $${i}`); values.push(calc.calculatedGradeLetter || null); i++;
     }
 
-    if (setClauses.length === 0) return course;
+    if (setClauses.length === 0) return findById(id, userId);
 
     setClauses.push('updated_at = NOW()');
     values.push(id);
     values.push(userId);
 
-    const { rows } = await query(
-        `UPDATE courses SET ${setClauses.join(', ')} WHERE id = $${i} AND user_id = $${i + 1} RETURNING *`,
+    await query(
+        `UPDATE courses SET ${setClauses.join(', ')} WHERE id = $${i} AND user_id = $${i + 1}`,
         values
     );
 
-    if (rows.length === 0) return null;
-    const assignments = await getAssignmentsForCourse(id);
-    return attachMethods(rowToCourse(rows[0], assignments));
+    // Single JOIN fetch for the final result
+    return findById(id, userId);
 }
 
 async function deleteCourse(id, userId) {
@@ -340,10 +395,23 @@ async function deleteCourse(id, userId) {
 
 // ── Assignment CRUD ──────────────────────────────────────────────────────────
 
+async function recalcAndReturnCourse(courseId, userId, gpaScale) {
+    const allAssignments = await getAssignmentsForCourse(courseId);
+    const mapped = allAssignments.map(rowToAssignment);
+    const calc = calculateFinalGradeFromAssignments(mapped, gpaScale);
+    await query(`
+        UPDATE courses SET
+            calculated_grade = $1, calculated_grade_points = $2,
+            calculated_grade_letter = $3, updated_at = NOW()
+        WHERE id = $4
+    `, [calc.calculatedGrade || null, calc.calculatedGradePoints || null, calc.calculatedGradeLetter || null, courseId]);
+
+    return findById(courseId, userId);
+}
+
 async function addAssignment(courseId, userId, assignmentData) {
-    // Verify course belongs to user
-    const { rows: courseRows } = await query('SELECT * FROM courses WHERE id = $1 AND user_id = $2', [courseId, userId]);
-    if (courseRows.length === 0) return null;
+    const existing = await courseExists(courseId, userId);
+    if (!existing) return null;
 
     const { name, type = 'Assignment', weight = 0, grade, maxGrade = 100, dueDate, notes, isCompleted = false } = assignmentData;
 
@@ -352,29 +420,16 @@ async function addAssignment(courseId, userId, assignmentData) {
         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *
     `, [courseId, name, type, weight, String(grade), maxGrade, dueDate || null, notes || null, isCompleted]);
 
-    // Recalculate course grades
-    const allAssignments = await getAssignmentsForCourse(courseId);
-    const mapped = allAssignments.map(rowToAssignment);
-    const calc = calculateFinalGradeFromAssignments(mapped, courseRows[0].gpa_scale);
-    if (calc.calculatedGrade != null) {
-        await query(`
-            UPDATE courses SET
-                calculated_grade = $1, calculated_grade_points = $2,
-                calculated_grade_letter = $3, updated_at = NOW()
-            WHERE id = $4
-        `, [calc.calculatedGrade, calc.calculatedGradePoints, calc.calculatedGradeLetter, courseId]);
-    }
-
-    const updatedCourse = await findById(courseId, userId);
-    return { assignment: rowToAssignment(rows[0]), course: updatedCourse };
+    const course = await recalcAndReturnCourse(courseId, userId, existing.gpa_scale);
+    return { assignment: rowToAssignment(rows[0]), course };
 }
 
 async function updateAssignment(courseId, assignmentId, userId, assignmentData) {
-    const { rows: courseRows } = await query('SELECT * FROM courses WHERE id = $1 AND user_id = $2', [courseId, userId]);
-    if (courseRows.length === 0) return null;
+    const existing = await courseExists(courseId, userId);
+    if (!existing) return null;
 
-    const { rows: existing } = await query('SELECT * FROM assignments WHERE id = $1 AND course_id = $2', [assignmentId, courseId]);
-    if (existing.length === 0) return null;
+    const { rows: assignmentCheck } = await query('SELECT id FROM assignments WHERE id = $1 AND course_id = $2', [assignmentId, courseId]);
+    if (assignmentCheck.length === 0) return null;
 
     const fieldMap = {
         name: 'name', type: 'type', weight: 'weight',
@@ -397,7 +452,8 @@ async function updateAssignment(courseId, assignmentId, userId, assignmentData) 
 
     if (setClauses.length === 0) {
         const course = await findById(courseId, userId);
-        return { assignment: rowToAssignment(existing[0]), course };
+        const aRow = assignmentCheck[0];
+        return { assignment: rowToAssignment(aRow), course };
     }
 
     setClauses.push('updated_at = NOW()');
@@ -409,43 +465,19 @@ async function updateAssignment(courseId, assignmentId, userId, assignmentData) 
         values
     );
 
-    // Recalculate
-    const allAssignments = await getAssignmentsForCourse(courseId);
-    const mapped = allAssignments.map(rowToAssignment);
-    const calc = calculateFinalGradeFromAssignments(mapped, courseRows[0].gpa_scale);
-    if (calc.calculatedGrade != null) {
-        await query(`
-            UPDATE courses SET
-                calculated_grade = $1, calculated_grade_points = $2,
-                calculated_grade_letter = $3, updated_at = NOW()
-            WHERE id = $4
-        `, [calc.calculatedGrade, calc.calculatedGradePoints, calc.calculatedGradeLetter, courseId]);
-    }
-
-    const updatedCourse = await findById(courseId, userId);
-    return { assignment: rowToAssignment(rows[0]), course: updatedCourse };
+    const course = await recalcAndReturnCourse(courseId, userId, existing.gpa_scale);
+    return { assignment: rowToAssignment(rows[0]), course };
 }
 
 async function deleteAssignment(courseId, assignmentId, userId) {
-    const { rows: courseRows } = await query('SELECT * FROM courses WHERE id = $1 AND user_id = $2', [courseId, userId]);
-    if (courseRows.length === 0) return null;
+    const existing = await courseExists(courseId, userId);
+    if (!existing) return null;
 
     const { rows } = await query('DELETE FROM assignments WHERE id = $1 AND course_id = $2 RETURNING *', [assignmentId, courseId]);
     if (rows.length === 0) return null;
 
-    // Recalculate
-    const allAssignments = await getAssignmentsForCourse(courseId);
-    const mapped = allAssignments.map(rowToAssignment);
-    const calc = calculateFinalGradeFromAssignments(mapped, courseRows[0].gpa_scale);
-    await query(`
-        UPDATE courses SET
-            calculated_grade = $1, calculated_grade_points = $2,
-            calculated_grade_letter = $3, updated_at = NOW()
-        WHERE id = $4
-    `, [calc.calculatedGrade || null, calc.calculatedGradePoints || null, calc.calculatedGradeLetter || null, courseId]);
-
-    const updatedCourse = await findById(courseId, userId);
-    return { course: updatedCourse };
+    const course = await recalcAndReturnCourse(courseId, userId, existing.gpa_scale);
+    return { course };
 }
 
 module.exports = {
@@ -458,6 +490,7 @@ module.exports = {
     updateAssignment,
     deleteAssignment,
     getAssignmentsForCourse,
+    courseExists,
     resolveCourseFinalGrade,
     shouldIncludeInGPA,
     calculateFinalGradeFromAssignments,

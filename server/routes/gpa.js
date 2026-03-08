@@ -257,40 +257,46 @@ router.get('/courses/:id', auth, async (req, res) => {
     }
 });
 
-// GET /api/gpa/summary - GPA summary for a user
+// GET /api/gpa/summary - GPA summary for a user (single-pass)
 router.get('/summary', auth, async (req, res) => {
     try {
         const courses = await Course.findByUser(req.user.id);
 
-        const overallGPA = calculateGPA(courses);
+        // Single pass: accumulate overall, semester, and category entries
+        const overallEntries = [];
+        const semesterBuckets = {};
+        const categoryBuckets = {};
+        let totalCredits = 0;
 
-        // GPA by semester
+        for (const c of courses) {
+            const eligible = c.shouldIncludeInGPA();
+            const finalGrade = eligible ? c.getFinalGrade() : null;
+
+            if (eligible && finalGrade && typeof finalGrade.gradePoints === 'number' && !isNaN(finalGrade.gradePoints)) {
+                const entry = { gradePoints: finalGrade.gradePoints, credits: c.credits };
+                overallEntries.push(entry);
+                totalCredits += c.credits;
+
+                const semKey = `${c.semester} ${c.year}`;
+                (semesterBuckets[semKey] ||= []).push(entry);
+
+                const catKey = c.category || 'General';
+                (categoryBuckets[catKey] ||= []).push(entry);
+            }
+        }
+
         const semesterGPAs = {};
-        const semesters = [...new Set(courses.map(c => `${c.semester} ${c.year}`))];
-
-        for (const sem of semesters) {
-            const parts = sem.split(' ');
-            const year = parseInt(parts.pop());
-            const semester = parts.join(' ');
-            const semesterCourses = courses.filter(c => c.semester === semester && c.year === year);
-            semesterGPAs[sem] = calculateGPA(semesterCourses);
+        for (const [key, entries] of Object.entries(semesterBuckets)) {
+            semesterGPAs[key] = calculateWeightedGPA(entries);
         }
 
-        // GPA by category
         const categoryGPAs = {};
-        const categories = [...new Set(courses.map(c => c.category || 'General'))];
-
-        for (const cat of categories) {
-            const categoryCourses = courses.filter(c => (c.category || 'General') === cat);
-            categoryGPAs[cat] = calculateGPA(categoryCourses);
+        for (const [key, entries] of Object.entries(categoryBuckets)) {
+            categoryGPAs[key] = calculateWeightedGPA(entries);
         }
-
-        const totalCredits = courses
-            .filter(c => c.shouldIncludeInGPA())
-            .reduce((sum, c) => sum + c.credits, 0);
 
         res.json({
-            overallGPA,
+            overallGPA: calculateWeightedGPA(overallEntries),
             semesterGPAs,
             categoryGPAs,
             totalCredits,
@@ -318,15 +324,15 @@ router.put('/courses/:id',
                 const inputType = req.body.gradeInputType || inferGradeInputType(req.body.grade);
                 req.body.gradeInputType = inputType;
 
-                // Need current course to get gpaScale if not provided
-                const existing = await Course.findById(req.params.id, req.user.id);
+                // Lightweight check to get gpaScale without loading assignments
+                const existing = await Course.courseExists(req.params.id, req.user.id);
                 if (!existing) {
                     return res.status(404).json({
                         message: 'Course not found',
                         code: 'COURSE_NOT_FOUND'
                     });
                 }
-                const resolved = resolveGrade(req.body.grade, inputType, req.body.gpaScale || existing.gpaScale);
+                const resolved = resolveGrade(req.body.grade, inputType, req.body.gpaScale || existing.gpa_scale);
                 req.body.gradePoints = resolved.gradePoints;
                 req.body.grade = String(req.body.grade);
             }
@@ -582,7 +588,7 @@ router.put('/courses/:id/grade-override',
                 });
             }
 
-            const existing = await Course.findById(req.params.id, req.user.id);
+            const existing = await Course.courseExists(req.params.id, req.user.id);
             if (!existing) {
                 return res.status(404).json({
                     message: 'Course not found',
@@ -590,7 +596,7 @@ router.put('/courses/:id/grade-override',
                 });
             }
 
-            const resolved = resolveGradeLegacy(gradeOverride, existing.gpaScale);
+            const resolved = resolveGradeLegacy(gradeOverride, existing.gpa_scale);
             const course = await Course.updateCourse(req.params.id, req.user.id, {
                 gradeOverride: String(gradeOverride),
                 gradeOverridePoints: resolved.gradePoints
@@ -666,80 +672,63 @@ router.put('/courses/:id/personal', auth, async (req, res) => {
     }
 });
 
-// GET /api/gpa/dashboard-analytics
+// GET /api/gpa/dashboard-analytics (single-pass)
 router.get('/dashboard-analytics', auth, async (req, res) => {
     try {
         const courses = await Course.findByUser(req.user.id);
 
+        // Single pass through courses — accumulate everything at once
         const gpaEntries = [];
-        for (const course of courses) {
-            if (course.shouldIncludeInGPA()) {
-                const finalGrade = course.getFinalGrade();
-                gpaEntries.push({
-                    gradePoints: finalGrade.gradePoints,
-                    credits: course.credits
-                });
-            }
-        }
+        const semesterBreakdown = {};
+        const categoryBreakdown = {};
+        let totalCredits = 0;
+        let studyHoursTotal = 0;
 
-        const analytics = {
-            totalCourses: courses.length,
-            totalCredits: courses.reduce((sum, course) => sum + (course.credits || 0), 0),
-            averageGPA: calculateWeightedGPA(gpaEntries),
-            semesterBreakdown: {},
-            categoryBreakdown: {},
-            studyHoursTotal: courses.reduce((sum, course) => sum + (course.studyHours || 0), 0)
-        };
-
-        // Semester breakdown
         for (const course of courses) {
-            const semester = `${course.semester} ${course.year}`;
-            if (!analytics.semesterBreakdown[semester]) {
-                analytics.semesterBreakdown[semester] = { courses: [], entries: [], count: 0 };
-            }
-            analytics.semesterBreakdown[semester].courses.push(course);
-            analytics.semesterBreakdown[semester].count += 1;
+            totalCredits += course.credits || 0;
+            studyHoursTotal += course.studyHours || 0;
+
+            const semKey = `${course.semester} ${course.year}`;
+            const catKey = course.category || 'General';
+
+            if (!semesterBreakdown[semKey]) semesterBreakdown[semKey] = { courses: [], entries: [], count: 0 };
+            if (!categoryBreakdown[catKey]) categoryBreakdown[catKey] = { courses: [], entries: [], count: 0 };
+
+            semesterBreakdown[semKey].courses.push(course);
+            semesterBreakdown[semKey].count += 1;
+            categoryBreakdown[catKey].courses.push(course);
+            categoryBreakdown[catKey].count += 1;
 
             if (course.shouldIncludeInGPA()) {
                 const fg = course.getFinalGrade();
-                analytics.semesterBreakdown[semester].entries.push({
-                    gradePoints: fg.gradePoints,
-                    credits: course.credits
-                });
+                const entry = { gradePoints: fg.gradePoints, credits: course.credits };
+                gpaEntries.push(entry);
+                semesterBreakdown[semKey].entries.push(entry);
+                categoryBreakdown[catKey].entries.push(entry);
             }
         }
 
-        for (const key of Object.keys(analytics.semesterBreakdown)) {
-            const bd = analytics.semesterBreakdown[key];
+        // Resolve GPAs from accumulated entries
+        for (const bd of Object.values(semesterBreakdown)) {
+            bd.averageGPA = calculateWeightedGPA(bd.entries);
+            delete bd.entries;
+        }
+        for (const bd of Object.values(categoryBreakdown)) {
             bd.averageGPA = calculateWeightedGPA(bd.entries);
             delete bd.entries;
         }
 
-        // Category breakdown
-        for (const course of courses) {
-            const category = course.category || 'General';
-            if (!analytics.categoryBreakdown[category]) {
-                analytics.categoryBreakdown[category] = { courses: [], entries: [], count: 0 };
+        res.json({
+            success: true,
+            analytics: {
+                totalCourses: courses.length,
+                totalCredits,
+                averageGPA: calculateWeightedGPA(gpaEntries),
+                semesterBreakdown,
+                categoryBreakdown,
+                studyHoursTotal
             }
-            analytics.categoryBreakdown[category].courses.push(course);
-            analytics.categoryBreakdown[category].count += 1;
-
-            if (course.shouldIncludeInGPA()) {
-                const fg = course.getFinalGrade();
-                analytics.categoryBreakdown[category].entries.push({
-                    gradePoints: fg.gradePoints,
-                    credits: course.credits
-                });
-            }
-        }
-
-        for (const key of Object.keys(analytics.categoryBreakdown)) {
-            const bd = analytics.categoryBreakdown[key];
-            bd.averageGPA = calculateWeightedGPA(bd.entries);
-            delete bd.entries;
-        }
-
-        res.json({ success: true, analytics });
+        });
     } catch (error) {
         console.error('Error fetching dashboard analytics:', error);
         res.status(500).json({ error: 'Internal server error' });
@@ -755,8 +744,8 @@ router.post('/study-logs', auth, async (req, res) => {
             return res.status(400).json({ error: 'Course ID, hours, and date are required' });
         }
 
-        const course = await Course.findById(courseId, req.user.id);
-        if (!course) {
+        const courseCheck = await Course.courseExists(courseId, req.user.id);
+        if (!courseCheck) {
             return res.status(404).json({ error: 'Course not found' });
         }
 
