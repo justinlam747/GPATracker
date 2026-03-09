@@ -63,7 +63,10 @@ export const AuthProvider = ({ children }) => {
 
             return { success: true };
         } catch (error) {
-            const message = error.response?.data?.message || 'Login failed';
+            if (!error.response) {
+                return { success: false, message: 'Unable to connect to server. Please check your connection.' };
+            }
+            const message = error.response.data?.message || 'Login failed. Please try again.';
             return { success: false, message };
         }
     };
@@ -84,7 +87,10 @@ export const AuthProvider = ({ children }) => {
 
             return { success: true };
         } catch (error) {
-            const message = error.response?.data?.message || 'Registration failed';
+            if (!error.response) {
+                return { success: false, message: 'Unable to connect to server. Please check your connection.' };
+            }
+            const message = error.response.data?.message || 'Registration failed. Please try again.';
             return { success: false, message };
         }
     };

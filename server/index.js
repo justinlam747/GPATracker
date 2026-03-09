@@ -18,8 +18,19 @@ const PORT = process.env.PORT || 5000;
 // Apply security middleware (Helmet, CORS, rate limiting, etc.)
 applySecurityMiddleware(app);
 
-// Logging middleware
-app.use(morgan('combined'));
+// Logging middleware — clean, readable format for API routes only
+morgan.token('body-summary', (req) => {
+    if (!req.body || Object.keys(req.body).length === 0) return '';
+    // Show keys only, never values (no passwords/tokens in logs)
+    return `[${Object.keys(req.body).join(', ')}]`;
+});
+app.use(morgan((tokens, req, res) => {
+    // Skip non-API routes (health-dashboard spam, static files, etc.)
+    if (!req.originalUrl.startsWith('/api')) return null;
+    const status = tokens.status(req, res);
+    const statusIcon = status >= 500 ? 'x' : status >= 400 ? '!' : 'o';
+    return `${statusIcon} ${tokens.method(req, res)} ${tokens.url(req, res)} ${status} ${tokens['response-time'](req, res)}ms ${tokens['body-summary'](req, res)}`;
+}));
 
 // Database connection + migration
 (async () => {
