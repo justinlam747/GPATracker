@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
 import { X, BookOpen, Plus } from 'lucide-react';
 import api from '../utils/api';
+import { addCourseSchema, validate } from '../lib/validators';
 
 const AddCourseModal = ({ isOpen, onClose, onCourseAdded }) => {
-    const { user } = useAuth();
     const [formData, setFormData] = useState({
         name: '',
         code: '',
@@ -16,37 +15,27 @@ const AddCourseModal = ({ isOpen, onClose, onCourseAdded }) => {
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [fieldErrors, setFieldErrors] = useState({});
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }));
+        setFormData(prev => ({ ...prev, [name]: value }));
+        if (fieldErrors[name]) setFieldErrors(prev => ({ ...prev, [name]: '' }));
+        if (error) setError('');
     };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setLoading(true);
         setError('');
+        setFieldErrors({});
 
-        // Client-side validation
-        if (!formData.name.trim()) {
-            setError('Course name is required');
-            setLoading(false);
-            return;
-        }
-        if (!formData.semester) {
-            setError('Semester is required');
-            setLoading(false);
-            return;
-        }
-        if (!formData.credits || formData.credits <= 0) {
-            setError('Credits must be greater than 0');
-            setLoading(false);
+        const result = validate(addCourseSchema, formData);
+        if (!result.success) {
+            setFieldErrors(result.errors);
             return;
         }
 
+        setLoading(true);
         try {
             const courseData = {
                 ...formData,
@@ -66,17 +55,21 @@ const AddCourseModal = ({ isOpen, onClose, onCourseAdded }) => {
                     year: new Date().getFullYear(),
                     notes: ''
                 });
+                setFieldErrors({});
                 onCourseAdded(response.data.course);
                 onClose();
             }
-        } catch (error) {
-            setError(error.response?.data?.message || 'Failed to add course');
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to add course');
         } finally {
             setLoading(false);
         }
     };
 
     if (!isOpen) return null;
+
+    const fieldClass = (field) =>
+        `w-full px-3 py-2 border ${fieldErrors[field] ? 'border-red-400 bg-red-50' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent`;
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -109,117 +102,92 @@ const AddCourseModal = ({ isOpen, onClose, onCourseAdded }) => {
                     )}
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        {/* Course Name */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Course Name *
-                            </label>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Course Name *</label>
                             <input
                                 type="text"
                                 name="name"
                                 value={formData.name}
                                 onChange={handleChange}
-                                required
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className={fieldClass('name')}
                                 placeholder="e.g., Introduction to Computer Science"
                             />
+                            {fieldErrors.name && <p className="mt-1 text-sm text-red-600">{fieldErrors.name}</p>}
                         </div>
 
-                        {/* Course Code */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Course Code
-                            </label>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Course Code</label>
                             <input
                                 type="text"
                                 name="code"
                                 value={formData.code}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className={fieldClass('code')}
                                 placeholder="e.g., CS101"
                             />
+                            {fieldErrors.code && <p className="mt-1 text-sm text-red-600">{fieldErrors.code}</p>}
                         </div>
 
-                        {/* Credits */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Credits *
-                            </label>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Credits *</label>
                             <input
                                 type="number"
                                 name="credits"
                                 value={formData.credits}
                                 onChange={handleChange}
-                                required
                                 min="0.5"
                                 step="0.5"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className={fieldClass('credits')}
                                 placeholder="e.g., 3"
                             />
+                            {fieldErrors.credits && <p className="mt-1 text-sm text-red-600">{fieldErrors.credits}</p>}
                         </div>
 
-                        {/* Grade (Optional) */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Grade
-                            </label>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Grade</label>
                             <input
                                 type="text"
                                 name="grade"
                                 value={formData.grade}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className={fieldClass('grade')}
                                 placeholder="e.g., A, A+, 95, 4.0 (leave blank if unknown)"
                             />
-
                         </div>
 
-                        {/* Semester */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Semester *
-                            </label>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Semester *</label>
                             <select
                                 name="semester"
                                 value={formData.semester}
                                 onChange={handleChange}
-                                required
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className={fieldClass('semester')}
                             >
                                 <option value="Fall">Fall</option>
                                 <option value="Spring">Spring</option>
                                 <option value="Summer">Summer</option>
                             </select>
+                            {fieldErrors.semester && <p className="mt-1 text-sm text-red-600">{fieldErrors.semester}</p>}
                         </div>
 
-                        {/* Year */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Year
-                            </label>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
                             <select
                                 name="year"
                                 value={formData.year}
                                 onChange={handleChange}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                className={fieldClass('year')}
                             >
                                 {Array.from({ length: 11 }, (_, i) => new Date().getFullYear() - 5 + i).map(year => (
                                     <option key={year} value={year}>{year}</option>
                                 ))}
                             </select>
+                            {fieldErrors.year && <p className="mt-1 text-sm text-red-600">{fieldErrors.year}</p>}
                         </div>
-
-                        {/* Category */}
-
-
-
                     </div>
 
-                    {/* Notes */}
                     <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Notes
-                        </label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
                         <textarea
                             name="notes"
                             value={formData.notes}
@@ -230,7 +198,6 @@ const AddCourseModal = ({ isOpen, onClose, onCourseAdded }) => {
                         />
                     </div>
 
-                    {/* Submit Button */}
                     <div className="flex space-x-3 pt-4">
                         <button
                             type="button"
