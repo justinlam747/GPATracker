@@ -1,485 +1,500 @@
-const mongoose = require('mongoose');
+const { query } = require('../db/pool');
+const {
+    resolveGrade,
+    resolveGradeLegacy,
+    isExcludedGrade,
+    isLetterGrade,
+    percentageToPoints,
+    percentageToLetter,
+    letterToPercentage,
+    clampPercentage,
+    calculateWeightedGPA
+} = require('../utils/gradeConversion');
 
-// Assignment schema for all courses
-const assignmentSchema = new mongoose.Schema({
-    name: {
-        type: String,
-        required: true,
-        trim: true
-    },
-    type: {
-        type: String,
-        enum: ['Assignment', 'Quiz', 'Exam', 'Project', 'Participation', 'Other'],
-        default: 'Assignment'
-    },
-    weight: {
-        type: Number,
-        required: true,
-        min: 0,
-        max: 100,
-        default: 0
-    },
-    grade: {
-        type: mongoose.Schema.Types.Mixed, // Can be string (A+) or number (95)
-        required: true
-    },
-    maxGrade: {
-        type: Number,
-        default: 100
-    },
-    dueDate: {
-        type: Date
-    },
-    notes: {
-        type: String,
-        trim: true
-    },
-    isCompleted: {
-        type: Boolean,
-        default: false
-    }
-}, { timestamps: true });
+// ── Row → course object ─────────────────────────────────────────────────────
 
-// Calculate grade points from assignment grades
-assignmentSchema.methods.calculateGradePoints = function (gpaScale = '4.0') {
-    if (typeof this.grade === 'number') {
-        // Percentage grade - convert to specified scale
-        if (gpaScale === 'percentage') {
-            return this.grade; // Return percentage as-is
-        } else if (gpaScale === '4.3') {
-            // Convert percentage to 4.3 scale
-            if (this.grade >= 97) return 4.3;
-            if (this.grade >= 93) return 4.0;
-            if (this.grade >= 90) return 3.7;
-            if (this.grade >= 87) return 3.3;
-            if (this.grade >= 83) return 3.0;
-            if (this.grade >= 80) return 2.7;
-            if (this.grade >= 77) return 2.3;
-            if (this.grade >= 73) return 2.0;
-            if (this.grade >= 70) return 1.7;
-            if (this.grade >= 67) return 1.3;
-            if (this.grade >= 63) return 1.0;
-            if (this.grade >= 60) return 0.7;
-            return 0.0;
-        } else {
-            // Default 4.0 scale
-            if (this.grade >= 93) return 4.0;
-            if (this.grade >= 90) return 3.7;
-            if (this.grade >= 87) return 3.3;
-            if (this.grade >= 83) return 3.0;
-            if (this.grade >= 80) return 2.7;
-            if (this.grade >= 77) return 2.3;
-            if (this.grade >= 73) return 2.0;
-            if (this.grade >= 70) return 1.7;
-            if (this.grade >= 67) return 1.3;
-            if (this.grade >= 63) return 1.0;
-            if (this.grade >= 60) return 0.7;
-            return 0.0;
-        }
-    } else {
-        // Letter grade - convert to specified scale
-        if (gpaScale === '4.3') {
-            const gradeMap = {
-                'A+': 4.3, 'A': 4.0, 'A-': 3.7,
-                'B+': 3.3, 'B': 3.0, 'B-': 2.7,
-                'C+': 2.3, 'C': 2.0, 'C-': 1.7,
-                'D+': 1.3, 'D': 1.0, 'D-': 0.7,
-                'F': 0.0, 'P': 0.0, 'NP': 0.0, 'W': 0.0, 'I': 0.0
-            };
-            return gradeMap[this.grade] || 0.0;
-        } else if (gpaScale === 'percentage') {
-            // Convert letter grade to percentage (approximate)
-            const percentageMap = {
-                'A+': 97, 'A': 93, 'A-': 90,
-                'B+': 87, 'B': 83, 'B-': 80,
-                'C+': 77, 'C': 73, 'C-': 70,
-                'D+': 67, 'D': 63, 'D-': 60,
-                'F': 50, 'P': 70, 'NP': 0, 'W': 0, 'I': 0
-            };
-            return percentageMap[this.grade] || 0;
-        } else {
-            // Default 4.0 scale
-            const gradeMap = {
-                'A+': 4.0, 'A': 4.0, 'A-': 3.7,
-                'B+': 3.3, 'B': 3.0, 'B-': 2.7,
-                'C+': 2.3, 'C': 2.0, 'C-': 1.7,
-                'D+': 1.3, 'D': 1.0, 'D-': 0.7,
-                'F': 0.0, 'P': 0.0, 'NP': 0.0, 'W': 0.0, 'I': 0.0
-            };
-            return gradeMap[this.grade] || 0.0;
-        }
-    }
-};
+function rowToCourse(row, assignments = []) {
+    if (!row) return null;
+    const course = {
+        _id: row.id,
+        id: row.id,
+        user: row.user_id,
+        name: row.name,
+        code: row.code,
+        credits: parseFloat(row.credits),
+        courseType: row.course_type,
+        grade: row.grade,
+        gradeInputType: row.grade_input_type,
+        gradeOverride: row.grade_override,
+        gradeOverridePoints: row.grade_override_points != null ? parseFloat(row.grade_override_points) : null,
+        calculatedGrade: row.calculated_grade != null ? parseFloat(row.calculated_grade) : null,
+        calculatedGradePoints: row.calculated_grade_points != null ? parseFloat(row.calculated_grade_points) : null,
+        calculatedGradeLetter: row.calculated_grade_letter,
+        finalGrade: row.final_grade,
+        gradePoints: row.grade_points != null ? parseFloat(row.grade_points) : null,
+        semester: row.semester,
+        year: row.year,
+        category: row.category,
+        notes: row.notes,
+        gpaScale: row.gpa_scale,
+        studyHours: row.study_hours != null ? parseFloat(row.study_hours) : 0,
+        difficultyRating: row.difficulty_rating,
+        personalNotes: row.personal_notes,
+        targetGrade: row.target_grade,
+        isCompleted: row.is_completed,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        assignments: assignments.map(rowToAssignment)
+    };
+    return course;
+}
 
-// Course schema
-const courseSchema = new mongoose.Schema({
-    user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-    },
-    name: {
-        type: String,
-        required: true,
-        trim: true
-    },
-    code: {
-        type: String,
-        trim: true
-    },
-    credits: {
-        type: Number,
-        required: true,
-        min: 0.5,
-        max: 10
-    },
-    courseType: {
-        type: String,
-        enum: ['simple', 'detailed'],
-        default: 'simple'
-    },
-    // For simple courses - grade is now optional
-    grade: {
-        type: mongoose.Schema.Types.Mixed, // Can be string (A+) or number (95)
-        required: false
-    },
-    // Assignments for any course
-    assignments: [assignmentSchema],
-    // User can override calculated grade
-    gradeOverride: {
-        type: mongoose.Schema.Types.Mixed
-    },
-    gradeOverridePoints: {
-        type: Number
-    },
-    // Calculated grades
-    calculatedGrade: {
-        type: String
-    },
-    calculatedGradePoints: {
-        type: Number
-    },
-    // Final grade (either calculated or overridden)
-    finalGrade: {
-        type: String
-    },
-    gradePoints: {
-        type: Number
-    },
-    semester: {
-        type: String,
-        required: true,
-        trim: true
-    },
-    year: {
-        type: Number,
-        required: true,
-        min: 2000,
-        max: 2030
-    },
-    category: {
-        type: String,
-        trim: true,
-        default: 'General'
-    },
-    notes: {
-        type: String,
-        trim: true
-    },
-    gpaScale: {
-        type: String,
-        enum: ['4.0', '4.3', 'percentage'],
-        default: '4.0'
-    },
-    // New fields for enhanced dashboard features
-    studyHours: {
-        type: Number,
-        min: 0,
-        default: 0
-    },
-    difficultyRating: {
-        type: Number,
-        min: 1,
-        max: 5,
-        default: 3
-    },
-    personalNotes: {
-        type: String,
-        trim: true,
-        maxlength: 1000
-    },
-    targetGrade: {
-        type: String
-    },
-    isCompleted: {
-        type: Boolean,
-        default: false
-    }
-}, { timestamps: true });
+function rowToAssignment(row) {
+    if (!row) return null;
+    return {
+        _id: row.id,
+        id: row.id,
+        name: row.name,
+        type: row.type,
+        weight: parseFloat(row.weight),
+        grade: row.grade,
+        maxGrade: row.max_grade != null ? parseFloat(row.max_grade) : 100,
+        dueDate: row.due_date,
+        notes: row.notes,
+        isCompleted: row.is_completed,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at
+    };
+}
 
-// Index for efficient queries
-courseSchema.index({ user: 1, semester: 1, year: 1 });
-courseSchema.index({ user: 1, category: 1 });
+// ── Grade calculation helpers ────────────────────────────────────────────────
 
-// Calculate final grade from assignments for any course
-courseSchema.methods.calculateFinalGrade = function () {
-    if (this.assignments.length === 0) {
-        return;
-    }
+function calculateFinalGradeFromAssignments(assignments, gpaScale) {
+    if (!assignments || assignments.length === 0) return {};
 
     let totalWeightedGrade = 0;
     let totalWeight = 0;
 
-    this.assignments.forEach(assignment => {
-        // Handle both percentage and letter grades
+    for (const assignment of assignments) {
         let gradeValue;
-        if (typeof assignment.grade === 'number') {
-            // If grade is already a number (percentage), use it directly
-            gradeValue = assignment.grade;
-        } else if (typeof assignment.grade === 'string') {
-            // If grade is a letter, convert to percentage first
-            if (assignment.grade.match(/^[A-Z][+-]?$/)) {
-                // Letter grade - convert to percentage
-                gradeValue = this.letterGradeToPercentage(assignment.grade);
-            } else {
-                // Try to parse as number
-                gradeValue = parseFloat(assignment.grade) || 0;
-            }
+        const gradeStr = String(assignment.grade);
+
+        if (!isNaN(parseFloat(gradeStr))) {
+            gradeValue = clampPercentage(parseFloat(gradeStr));
+        } else if (isLetterGrade(gradeStr)) {
+            gradeValue = letterToPercentage(gradeStr);
         } else {
             gradeValue = 0;
         }
 
-        const weight = assignment.weight || 0;
-        totalWeightedGrade += gradeValue * weight;
+        const maxGrade = (assignment.maxGrade || assignment.max_grade || 100);
+        const normalizedGrade = (gradeValue / (maxGrade > 0 ? maxGrade : 100)) * 100;
+        const weight = parseFloat(assignment.weight) || 0;
+        totalWeightedGrade += normalizedGrade * weight;
         totalWeight += weight;
-    });
+    }
 
     if (totalWeight > 0) {
         const finalPercentage = totalWeightedGrade / totalWeight;
-        this.calculatedGrade = Math.round(finalPercentage * 10) / 10; // Round to 1 decimal
-        this.calculatedGradePoints = this.calculateGradePointsFromPercentage(finalPercentage, this.gpaScale);
-
-        // Also set a letter grade version for display purposes
-        this.calculatedGradeLetter = this.pointsToLetterGrade(this.calculatedGradePoints, this.gpaScale);
-    }
-};
-
-// Pre-save middleware to calculate grades
-courseSchema.pre('save', function (next) {
-    // Always calculate final grade from assignments if they exist
-    if (this.assignments.length > 0) {
-        this.calculateFinalGrade();
-    }
-
-    // For simple courses, calculate grade points if grade is provided
-    if (this.courseType === 'simple' && this.grade !== undefined) {
-        // Calculate grade points for simple courses based on the course's GPA scale
-        if (typeof this.grade === 'number') {
-            // Check if this is actually GPA points (not percentage)
-            if (this.gpaScale === '4.3' && this.grade <= 4.3 && this.grade > 0) {
-                // This is likely GPA points on 4.3 scale
-                this.gradePoints = this.grade;
-            } else if (this.gpaScale === '4.0' && this.grade <= 4.0 && this.grade > 0) {
-                // This is likely GPA points on 4.0 scale
-                this.gradePoints = this.grade;
-            } else {
-                // This is a percentage grade - convert to the course's scale
-                this.gradePoints = this.calculateGradePointsFromPercentage(this.grade, this.gpaScale);
-            }
-        } else if (typeof this.grade === 'string') {
-            // Check if this is a numeric string that could be GPA points
-            const numGrade = parseFloat(this.grade);
-            if (!isNaN(numGrade)) {
-                if (this.gpaScale === '4.3' && numGrade <= 4.3 && numGrade > 0) {
-                    // This is likely GPA points on 4.3 scale
-                    this.gradePoints = numGrade;
-                } else if (this.gpaScale === '4.0' && numGrade <= 4.0 && numGrade > 0) {
-                    // This is likely GPA points on 4.0 scale
-                    this.gradePoints = numGrade;
-                } else if (numGrade <= 100 && numGrade > 0) {
-                    // This is a percentage grade - convert to the course's scale
-                    this.gradePoints = this.calculateGradePointsFromPercentage(numGrade, this.gpaScale);
-                } else {
-                    // Letter grade - convert to the course's scale
-                    this.gradePoints = this.calculateGradePointsFromLetter(this.grade, this.gpaScale);
-                }
-            } else {
-                // Letter grade - convert to the course's scale
-                this.gradePoints = this.calculateGradePointsFromLetter(this.grade, this.gpaScale);
-            }
-        } else {
-            // Letter grade - convert to the course's scale
-            this.gradePoints = this.calculateGradePointsFromLetter(this.grade, this.gpaScale);
-        }
-    } else if (this.courseType === 'simple' && this.grade === undefined) {
-        // Course without grade - set default values
-        this.gradePoints = 0.0;
-    }
-    next();
-});
-
-// Helper method to calculate grade points from percentage based on scale
-courseSchema.methods.calculateGradePointsFromPercentage = function (percentage, scale = '4.0') {
-    if (scale === '4.3') {
-        if (percentage >= 97) return 4.3;
-        if (percentage >= 93) return 4.0;
-        if (percentage >= 90) return 3.7;
-        if (percentage >= 87) return 3.3;
-        if (percentage >= 83) return 3.0;
-        if (percentage >= 80) return 2.7;
-        if (percentage >= 77) return 2.3;
-        if (percentage >= 73) return 2.0;
-        if (percentage >= 70) return 1.7;
-        if (percentage >= 67) return 1.3;
-        if (percentage >= 63) return 1.0;
-        if (percentage >= 60) return 0.7;
-        return 0.0;
-    } else if (scale === 'percentage') {
-        return percentage; // Return percentage as-is
-    } else {
-        // Default 4.0 scale
-        if (percentage >= 93) return 4.0;
-        if (percentage >= 90) return 3.7;
-        if (percentage >= 87) return 3.3;
-        if (percentage >= 83) return 3.0;
-        if (percentage >= 80) return 2.7;
-        if (percentage >= 77) return 2.3;
-        if (percentage >= 73) return 2.0;
-        if (percentage >= 70) return 1.7;
-        if (percentage >= 67) return 1.3;
-        if (percentage >= 63) return 1.0;
-        if (percentage >= 60) return 0.7;
-        return 0.0;
-    }
-};
-
-// Helper method to convert letter grade to percentage
-courseSchema.methods.letterGradeToPercentage = function (letterGrade) {
-    const gradeMap = {
-        'A+': 97, 'A': 93, 'A-': 90,
-        'B+': 87, 'B': 83, 'B-': 80,
-        'C+': 77, 'C': 73, 'C-': 70,
-        'D+': 67, 'D': 63, 'D-': 60,
-        'F': 0
-    };
-    return gradeMap[letterGrade] || 0;
-};
-
-// Helper method to calculate grade points from letter grade based on scale
-courseSchema.methods.calculateGradePointsFromLetter = function (letter, scale = '4.0') {
-    if (scale === '4.3') {
-        const gradeMap = {
-            'A+': 4.3, 'A': 4.0, 'A-': 3.7,
-            'B+': 3.3, 'B': 3.0, 'B-': 2.7,
-            'C+': 2.3, 'C': 2.0, 'C-': 1.7,
-            'D+': 1.3, 'D': 1.0, 'D-': 0.7,
-            'F': 0.0, 'P': 0.0, 'NP': 0.0, 'W': 0.0, 'I': 0.0
-        };
-        return gradeMap[letter] || 0.0;
-    } else if (scale === 'percentage') {
-        const percentageMap = {
-            'A+': 97, 'A': 93, 'A-': 90,
-            'B+': 87, 'B': 83, 'B-': 80,
-            'C+': 77, 'C': 73, 'C-': 70,
-            'D+': 67, 'D': 63, 'D-': 60,
-            'F': 50, 'P': 70, 'NP': 0, 'W': 0, 'I': 0
-        };
-        return percentageMap[letter] || 0;
-    } else {
-        // Default 4.0 scale
-        const gradeMap = {
-            'A+': 4.0, 'A': 4.0, 'A-': 3.7,
-            'B+': 3.3, 'B': 3.0, 'B-': 2.7,
-            'C+': 2.3, 'C': 2.0, 'C-': 1.7,
-            'D+': 1.3, 'D': 1.0, 'D-': 0.7,
-            'F': 0.0, 'P': 0.0, 'NP': 0.0, 'W': 0.0, 'I': 0.0
-        };
-        return gradeMap[letter] || 0.0;
-    }
-};
-
-// Helper method to convert grade points to letter grade based on scale
-courseSchema.methods.pointsToLetterGrade = function (points, scale = '4.0') {
-    if (scale === '4.3') {
-        if (points >= 4.0) return 'A+';
-        if (points >= 3.7) return 'A';
-        if (points >= 3.3) return 'A-';
-        if (points >= 3.0) return 'B+';
-        if (points >= 2.7) return 'B';
-        if (points >= 2.3) return 'B-';
-        if (points >= 2.0) return 'C+';
-        if (points >= 1.7) return 'C';
-        if (points >= 1.3) return 'C-';
-        if (points >= 1.0) return 'D+';
-        if (points >= 0.7) return 'D';
-        if (points >= 0.3) return 'D-';
-        return 'F';
-    } else if (scale === 'percentage') {
-        if (points >= 93) return 'A';
-        if (points >= 90) return 'A-';
-        if (points >= 87) return 'B+';
-        if (points >= 83) return 'B';
-        if (points >= 80) return 'B-';
-        if (points >= 77) return 'C+';
-        if (points >= 73) return 'C';
-        if (points >= 70) return 'C-';
-        if (points >= 67) return 'D+';
-        if (points >= 63) return 'D';
-        if (points >= 60) return 'D-';
-        return 'F';
-    } else {
-        // Default 4.0 scale
-        if (points >= 3.7) return 'A';
-        if (points >= 3.3) return 'B+';
-        if (points >= 3.0) return 'B';
-        if (points >= 2.7) return 'B-';
-        if (points >= 2.3) return 'C+';
-        if (points >= 2.0) return 'C';
-        if (points >= 1.7) return 'C-';
-        if (points >= 1.3) return 'D+';
-        if (points >= 1.0) return 'D';
-        if (points >= 0.7) return 'D-';
-        return 'F';
-    }
-};
-
-// Get the final grade (either overridden or calculated)
-courseSchema.methods.getFinalGrade = function () {
-    if (this.gradeOverride !== undefined) {
         return {
-            grade: this.gradeOverride,
-            gradePoints: this.gradeOverridePoints,
+            calculatedGrade: Math.round(finalPercentage * 10) / 10,
+            calculatedGradePoints: percentageToPoints(finalPercentage, gpaScale),
+            calculatedGradeLetter: percentageToLetter(finalPercentage)
+        };
+    }
+    return {};
+}
+
+function resolveCourseFinalGrade(course) {
+    if (course.gradeOverride != null && course.gradeOverride !== '') {
+        return {
+            grade: course.gradeOverride,
+            gradePoints: typeof course.gradeOverridePoints === 'number' && !isNaN(course.gradeOverridePoints)
+                ? course.gradeOverridePoints : 0,
             isOverridden: true
         };
-    } else if (this.calculatedGrade !== undefined) {
-        // Prefer letter grade for display if available
-        const displayGrade = this.calculatedGradeLetter || this.calculatedGrade;
+    }
+
+    if (course.calculatedGrade != null) {
+        const displayGrade = course.calculatedGradeLetter || String(course.calculatedGrade);
         return {
             grade: displayGrade,
-            gradePoints: this.calculatedGradePoints,
-            isOverridden: false
-        };
-    } else if (this.grade !== undefined) {
-        return {
-            grade: this.grade,
-            gradePoints: this.gradePoints,
-            isOverridden: false
-        };
-    } else if (this.assignments && this.assignments.length > 0) {
-        // Course has assignments but no calculated grade yet
-        return {
-            grade: 'N/A',
-            gradePoints: 0.0,
-            isOverridden: false
-        };
-    } else {
-        // Course has no grade and no assignments
-        return {
-            grade: 'N/A',
-            gradePoints: 0.0,
+            gradePoints: typeof course.calculatedGradePoints === 'number' && !isNaN(course.calculatedGradePoints)
+                ? course.calculatedGradePoints : 0,
             isOverridden: false
         };
     }
-};
 
-module.exports = mongoose.model('Course', courseSchema);
+    if (course.grade != null && course.grade !== '') {
+        return {
+            grade: course.grade,
+            gradePoints: typeof course.gradePoints === 'number' && !isNaN(course.gradePoints)
+                ? course.gradePoints : 0,
+            isOverridden: false
+        };
+    }
+
+    return { grade: 'N/A', gradePoints: 0, isOverridden: false };
+}
+
+function shouldIncludeInGPA(course) {
+    if (!course.isCompleted) return false;
+    const finalGrade = resolveCourseFinalGrade(course);
+    if (isExcludedGrade(finalGrade.grade)) return false;
+    if (finalGrade.grade === 'N/A') return false;
+    return true;
+}
+
+function attachMethods(course) {
+    course.getFinalGrade = () => resolveCourseFinalGrade(course);
+    course.shouldIncludeInGPA = () => shouldIncludeInGPA(course);
+    return course;
+}
+
+// ── JOIN-based queries (eliminates N+1) ──────────────────────────────────────
+
+// Single query: fetch course(s) with all assignments via LEFT JOIN
+const COURSE_WITH_ASSIGNMENTS_COLS = `
+    c.id, c.user_id, c.name, c.code, c.credits, c.course_type,
+    c.grade, c.grade_input_type, c.grade_override, c.grade_override_points,
+    c.calculated_grade, c.calculated_grade_points, c.calculated_grade_letter,
+    c.final_grade, c.grade_points, c.semester, c.year, c.category, c.notes,
+    c.gpa_scale, c.study_hours, c.difficulty_rating, c.personal_notes,
+    c.target_grade, c.is_completed, c.created_at, c.updated_at,
+    a.id AS a_id, a.name AS a_name, a.type AS a_type, a.weight AS a_weight,
+    a.grade AS a_grade, a.max_grade AS a_max_grade, a.due_date AS a_due_date,
+    a.notes AS a_notes, a.is_completed AS a_is_completed,
+    a.created_at AS a_created_at, a.updated_at AS a_updated_at
+`;
+
+function groupJoinRows(rows) {
+    const courseMap = new Map();
+    for (const row of rows) {
+        if (!courseMap.has(row.id)) {
+            courseMap.set(row.id, { courseRow: row, assignmentRows: [] });
+        }
+        if (row.a_id) {
+            courseMap.get(row.id).assignmentRows.push({
+                id: row.a_id,
+                name: row.a_name,
+                type: row.a_type,
+                weight: row.a_weight,
+                grade: row.a_grade,
+                max_grade: row.a_max_grade,
+                due_date: row.a_due_date,
+                notes: row.a_notes,
+                is_completed: row.a_is_completed,
+                created_at: row.a_created_at,
+                updated_at: row.a_updated_at
+            });
+        }
+    }
+    return courseMap;
+}
+
+// ── CRUD ─────────────────────────────────────────────────────────────────────
+
+async function findById(id, userId) {
+    const { rows } = await query(`
+        SELECT ${COURSE_WITH_ASSIGNMENTS_COLS}
+        FROM courses c
+        LEFT JOIN assignments a ON a.course_id = c.id
+        WHERE c.id = $1 AND c.user_id = $2
+        ORDER BY a.created_at ASC
+    `, [id, userId]);
+
+    if (rows.length === 0) return null;
+    const courseMap = groupJoinRows(rows);
+    const entry = courseMap.get(rows[0].id);
+    return attachMethods(rowToCourse(entry.courseRow, entry.assignmentRows));
+}
+
+async function findByUser(userId, filters = {}) {
+    let where = 'c.user_id = $1';
+    const params = [userId];
+    let i = 2;
+
+    if (filters.semester) {
+        where += ` AND c.semester = $${i++}`;
+        params.push(filters.semester);
+    }
+    if (filters.year) {
+        where += ` AND c.year = $${i++}`;
+        params.push(parseInt(filters.year));
+    }
+    if (filters.category) {
+        where += ` AND c.category = $${i++}`;
+        params.push(filters.category);
+    }
+
+    const { rows } = await query(`
+        SELECT ${COURSE_WITH_ASSIGNMENTS_COLS}
+        FROM courses c
+        LEFT JOIN assignments a ON a.course_id = c.id
+        WHERE ${where}
+        ORDER BY c.year DESC, c.semester ASC, c.name ASC, a.created_at ASC
+    `, params);
+
+    const courseMap = groupJoinRows(rows);
+    const courses = [];
+    for (const [, entry] of courseMap) {
+        courses.push(attachMethods(rowToCourse(entry.courseRow, entry.assignmentRows)));
+    }
+    return courses;
+}
+
+async function getAssignmentsForCourse(courseId) {
+    const { rows } = await query(
+        'SELECT * FROM assignments WHERE course_id = $1 ORDER BY created_at ASC',
+        [courseId]
+    );
+    return rows;
+}
+
+// Lightweight existence check — avoids loading assignments
+async function courseExists(id, userId) {
+    const { rows } = await query(
+        'SELECT id, gpa_scale FROM courses WHERE id = $1 AND user_id = $2',
+        [id, userId]
+    );
+    return rows[0] || null;
+}
+
+async function createCourse(courseData) {
+    const {
+        userId, name, code, credits, courseType = 'simple',
+        grade, gradeInputType, gradeOverride, gradeOverridePoints,
+        semester, year, category = 'General', notes,
+        gpaScale = '4.0', isCompleted = false,
+        gradePoints, calculatedGrade, calculatedGradePoints, calculatedGradeLetter
+    } = courseData;
+
+    const { rows } = await query(`
+        INSERT INTO courses (
+            user_id, name, code, credits, course_type,
+            grade, grade_input_type, grade_override, grade_override_points,
+            calculated_grade, calculated_grade_points, calculated_grade_letter,
+            grade_points, semester, year, category, notes,
+            gpa_scale, is_completed
+        ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
+        RETURNING *
+    `, [
+        userId, name, code || null, credits, courseType,
+        grade || null, gradeInputType || 'letter',
+        gradeOverride || null, gradeOverridePoints || null,
+        calculatedGrade || null, calculatedGradePoints || null, calculatedGradeLetter || null,
+        gradePoints || null, semester, year, category, notes || null,
+        gpaScale, isCompleted
+    ]);
+
+    const courseId = rows[0].id;
+
+    // Insert assignments if provided
+    const assignments = courseData.assignments || [];
+    const insertedAssignments = [];
+    for (const a of assignments) {
+        const aResult = await query(`
+            INSERT INTO assignments (course_id, name, type, weight, grade, max_grade, due_date, notes, is_completed)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *
+        `, [courseId, a.name, a.type || 'Assignment', a.weight || 0, String(a.grade), a.maxGrade || 100, a.dueDate || null, a.notes || null, a.isCompleted || false]);
+        insertedAssignments.push(aResult.rows[0]);
+    }
+
+    // If there are assignments, calculate and update in one shot
+    if (insertedAssignments.length > 0) {
+        const mapped = insertedAssignments.map(rowToAssignment);
+        const calc = calculateFinalGradeFromAssignments(mapped, gpaScale);
+        if (calc.calculatedGrade != null) {
+            const { rows: updated } = await query(`
+                UPDATE courses SET
+                    calculated_grade = $1, calculated_grade_points = $2,
+                    calculated_grade_letter = $3, updated_at = NOW()
+                WHERE id = $4 RETURNING *
+            `, [calc.calculatedGrade, calc.calculatedGradePoints, calc.calculatedGradeLetter, courseId]);
+            return attachMethods(rowToCourse(updated[0], insertedAssignments));
+        }
+    }
+
+    return attachMethods(rowToCourse(rows[0], insertedAssignments));
+}
+
+async function updateCourse(id, userId, updates) {
+    // Lightweight check instead of full findById with JOIN
+    const existing = await courseExists(id, userId);
+    if (!existing) return null;
+
+    const fieldMap = {
+        name: 'name', code: 'code', credits: 'credits',
+        courseType: 'course_type', grade: 'grade',
+        gradeInputType: 'grade_input_type',
+        gradeOverride: 'grade_override', gradeOverridePoints: 'grade_override_points',
+        calculatedGrade: 'calculated_grade', calculatedGradePoints: 'calculated_grade_points',
+        calculatedGradeLetter: 'calculated_grade_letter',
+        gradePoints: 'grade_points',
+        semester: 'semester', year: 'year', category: 'category',
+        notes: 'notes', gpaScale: 'gpa_scale',
+        studyHours: 'study_hours', difficultyRating: 'difficulty_rating',
+        personalNotes: 'personal_notes', targetGrade: 'target_grade',
+        isCompleted: 'is_completed'
+    };
+
+    const setClauses = [];
+    const values = [];
+    let i = 1;
+
+    for (const [key, value] of Object.entries(updates)) {
+        const col = fieldMap[key];
+        if (col && value !== undefined) {
+            setClauses.push(`${col} = $${i}`);
+            values.push(value);
+            i++;
+        }
+    }
+
+    // Handle assignments update
+    if (updates.assignments !== undefined) {
+        await query('DELETE FROM assignments WHERE course_id = $1', [id]);
+        const insertedAssignments = [];
+        for (const a of updates.assignments) {
+            const aResult = await query(`
+                INSERT INTO assignments (course_id, name, type, weight, grade, max_grade, due_date, notes, is_completed)
+                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *
+            `, [id, a.name, a.type || 'Assignment', a.weight || 0, String(a.grade), a.maxGrade || 100, a.dueDate || null, a.notes || null, a.isCompleted || false]);
+            insertedAssignments.push(aResult.rows[0]);
+        }
+
+        const mapped = insertedAssignments.map(rowToAssignment);
+        const calc = calculateFinalGradeFromAssignments(mapped, updates.gpaScale || existing.gpa_scale);
+        setClauses.push(`calculated_grade = $${i}`); values.push(calc.calculatedGrade || null); i++;
+        setClauses.push(`calculated_grade_points = $${i}`); values.push(calc.calculatedGradePoints || null); i++;
+        setClauses.push(`calculated_grade_letter = $${i}`); values.push(calc.calculatedGradeLetter || null); i++;
+    }
+
+    if (setClauses.length === 0) return findById(id, userId);
+
+    setClauses.push('updated_at = NOW()');
+    values.push(id);
+    values.push(userId);
+
+    await query(
+        `UPDATE courses SET ${setClauses.join(', ')} WHERE id = $${i} AND user_id = $${i + 1}`,
+        values
+    );
+
+    // Single JOIN fetch for the final result
+    return findById(id, userId);
+}
+
+async function deleteCourse(id, userId) {
+    const { rows } = await query(
+        'DELETE FROM courses WHERE id = $1 AND user_id = $2 RETURNING *',
+        [id, userId]
+    );
+    return rows.length > 0 ? rowToCourse(rows[0]) : null;
+}
+
+// ── Assignment CRUD ──────────────────────────────────────────────────────────
+
+async function recalcAndReturnCourse(courseId, userId, gpaScale) {
+    const allAssignments = await getAssignmentsForCourse(courseId);
+    const mapped = allAssignments.map(rowToAssignment);
+    const calc = calculateFinalGradeFromAssignments(mapped, gpaScale);
+    await query(`
+        UPDATE courses SET
+            calculated_grade = $1, calculated_grade_points = $2,
+            calculated_grade_letter = $3, updated_at = NOW()
+        WHERE id = $4
+    `, [calc.calculatedGrade || null, calc.calculatedGradePoints || null, calc.calculatedGradeLetter || null, courseId]);
+
+    return findById(courseId, userId);
+}
+
+async function addAssignment(courseId, userId, assignmentData) {
+    const existing = await courseExists(courseId, userId);
+    if (!existing) return null;
+
+    const { name, type = 'Assignment', weight = 0, grade, maxGrade = 100, dueDate, notes, isCompleted = false } = assignmentData;
+
+    const { rows } = await query(`
+        INSERT INTO assignments (course_id, name, type, weight, grade, max_grade, due_date, notes, is_completed)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *
+    `, [courseId, name, type, weight, String(grade), maxGrade, dueDate || null, notes || null, isCompleted]);
+
+    const course = await recalcAndReturnCourse(courseId, userId, existing.gpa_scale);
+    return { assignment: rowToAssignment(rows[0]), course };
+}
+
+async function updateAssignment(courseId, assignmentId, userId, assignmentData) {
+    const existing = await courseExists(courseId, userId);
+    if (!existing) return null;
+
+    const { rows: assignmentCheck } = await query('SELECT id FROM assignments WHERE id = $1 AND course_id = $2', [assignmentId, courseId]);
+    if (assignmentCheck.length === 0) return null;
+
+    const fieldMap = {
+        name: 'name', type: 'type', weight: 'weight',
+        grade: 'grade', maxGrade: 'max_grade', dueDate: 'due_date',
+        notes: 'notes', isCompleted: 'is_completed'
+    };
+
+    const setClauses = [];
+    const values = [];
+    let i = 1;
+
+    for (const [key, value] of Object.entries(assignmentData)) {
+        const col = fieldMap[key];
+        if (col && value !== undefined) {
+            setClauses.push(`${col} = $${i}`);
+            values.push(key === 'grade' ? String(value) : value);
+            i++;
+        }
+    }
+
+    if (setClauses.length === 0) {
+        const course = await findById(courseId, userId);
+        const aRow = assignmentCheck[0];
+        return { assignment: rowToAssignment(aRow), course };
+    }
+
+    setClauses.push('updated_at = NOW()');
+    values.push(assignmentId);
+    values.push(courseId);
+
+    const { rows } = await query(
+        `UPDATE assignments SET ${setClauses.join(', ')} WHERE id = $${i} AND course_id = $${i + 1} RETURNING *`,
+        values
+    );
+
+    const course = await recalcAndReturnCourse(courseId, userId, existing.gpa_scale);
+    return { assignment: rowToAssignment(rows[0]), course };
+}
+
+async function deleteAssignment(courseId, assignmentId, userId) {
+    const existing = await courseExists(courseId, userId);
+    if (!existing) return null;
+
+    const { rows } = await query('DELETE FROM assignments WHERE id = $1 AND course_id = $2 RETURNING *', [assignmentId, courseId]);
+    if (rows.length === 0) return null;
+
+    const course = await recalcAndReturnCourse(courseId, userId, existing.gpa_scale);
+    return { course };
+}
+
+module.exports = {
+    findById,
+    findByUser,
+    createCourse,
+    updateCourse,
+    deleteCourse,
+    addAssignment,
+    updateAssignment,
+    deleteAssignment,
+    getAssignmentsForCourse,
+    courseExists,
+    resolveCourseFinalGrade,
+    shouldIncludeInGPA,
+    calculateFinalGradeFromAssignments,
+    attachMethods,
+    rowToCourse,
+    rowToAssignment
+};

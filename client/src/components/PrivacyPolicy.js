@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Shield, FileText, Lock, Eye, Database } from 'lucide-react';
+import { ArrowLeft, Shield, FileText, Lock } from 'lucide-react';
 
 const PrivacyPolicy = () => {
     return (

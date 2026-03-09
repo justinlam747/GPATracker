@@ -34,9 +34,9 @@ const registerSchema = z.object({
         .max(2030, 'Graduation year must be 2030 or earlier')
         .optional(),
 
-    gpaScale: z.number()
-        .refine(val => [4.0, 5.0, 10.0].includes(val), 'GPA scale must be 4.0, 5.0, or 10.0')
-        .default(4.0)
+    gpaScale: z.enum(['4.0', '4.3', 'percentage'])
+        .default('4.0')
+        .optional()
 }).refine((data) => data.password === data.confirmPassword, {
     message: "Passwords don't match",
     path: ["confirmPassword"]

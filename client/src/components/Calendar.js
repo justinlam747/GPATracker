@@ -1,17 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
-import Footer from './Footer';
 import api from '../utils/api';
 import {
     Calendar as CalendarIcon,
     List,
     ChevronLeft,
     ChevronRight,
-    Clock,
     BookOpen,
-    Plus,
-    Trash2,
     BarChart3,
     ArrowLeft,
     Eye,
@@ -23,10 +19,10 @@ import {
 } from 'lucide-react';
 
 const Calendar = () => {
-    const { user } = useAuth();
+    useAuth();
     const [view, setView] = useState('calendar'); // 'calendar' or 'list'
     const [currentDate, setCurrentDate] = useState(new Date());
-    const [courses, setCourses] = useState([]);
+    const [, setCourses] = useState([]);
     const [deadlines, setDeadlines] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -34,7 +30,7 @@ const Calendar = () => {
 
     useEffect(() => {
         fetchCourses();
-    }, []);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const fetchCourses = async () => {
         try {

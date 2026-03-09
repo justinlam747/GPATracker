@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { percentageToGPA, formatGPA, getLetterGrade, getGradeColor } from '../utils/scaleConverter';
+import { percentageToGPA } from '../utils/scaleConverter';
 import AddCourseModal from './AddCourseModal';
 import Footer from './Footer';
 import api from '../utils/api';
@@ -16,7 +16,6 @@ import {
     Award,
     Eye,
     RefreshCw,
-    Shield,
     Trash2,
     LogOut,
     FileText,
@@ -142,7 +141,7 @@ const Dashboard = () => {
 
 
 
-    const handleRevertOverride = async (courseId) => {
+    const handleRevertOverride = async (courseId) => { // eslint-disable-line no-unused-vars
         try {
             const response = await api.put(`/gpa/courses/${courseId}/revert-override`);
             if (response.data) {
@@ -228,7 +227,7 @@ const Dashboard = () => {
 
 
 
-    const getDisplayGradeColor = (grade) => {
+    const getDisplayGradeColor = (grade) => { // eslint-disable-line no-unused-vars
         if (!grade || grade === 'N/A') return 'bg-gray-100 text-gray-800';
 
         const userScale = user?.gpaScale || '4.0';

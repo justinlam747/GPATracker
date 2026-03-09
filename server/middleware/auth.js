@@ -1,10 +1,34 @@
 const jwt = require('jsonwebtoken');
+const { query } = require('../db/pool');
 const User = require('../models/User');
 const { parse } = require('cookie');
 
+// Lightweight user check — only fetches id + is_active (no full row scan)
+async function findUserLightweight(userId) {
+    const { rows } = await query(
+        'SELECT id, email, first_name, last_name, institution, graduation_year, gpa_scale, is_active, is_email_verified, max_sessions, created_at, updated_at FROM users WHERE id = $1',
+        [userId]
+    );
+    if (rows.length === 0) return null;
+    const r = rows[0];
+    return {
+        _id: r.id, id: r.id,
+        email: r.email,
+        firstName: r.first_name,
+        lastName: r.last_name,
+        institution: r.institution,
+        graduationYear: r.graduation_year,
+        gpaScale: r.gpa_scale,
+        isActive: r.is_active,
+        isEmailVerified: r.is_email_verified,
+        maxSessions: r.max_sessions,
+        createdAt: r.created_at,
+        updatedAt: r.updated_at
+    };
+}
+
 const auth = async (req, res, next) => {
     try {
-        // Get access token from Authorization header
         const authHeader = req.header('Authorization');
         if (!authHeader || !authHeader.startsWith('Bearer ')) {
             return res.status(401).json({
@@ -16,10 +40,8 @@ const auth = async (req, res, next) => {
         const accessToken = authHeader.replace('Bearer ', '');
 
         try {
-            // Verify access token
             const decoded = jwt.verify(accessToken, process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET || 'fallback-secret');
 
-            // Check if token is expired
             if (decoded.exp && Date.now() >= decoded.exp * 1000) {
                 return res.status(401).json({
                     message: 'Access token expired',
@@ -27,8 +49,8 @@ const auth = async (req, res, next) => {
                 });
             }
 
-            // Get user from database
-            const user = await User.findById(decoded.userId).select('-password -refreshTokens');
+            // Lightweight query — skips password, failed login, refresh tokens
+            const user = await findUserLightweight(decoded.userId);
             if (!user) {
                 return res.status(401).json({
                     message: 'User not found',
@@ -36,7 +58,6 @@ const auth = async (req, res, next) => {
                 });
             }
 
-            // Check if user is active
             if (!user.isActive) {
                 return res.status(401).json({
                     message: 'Account is deactivated',
@@ -44,7 +65,6 @@ const auth = async (req, res, next) => {
                 });
             }
 
-            // Attach user to request
             req.user = user;
             req.accessToken = accessToken;
             next();
@@ -72,7 +92,6 @@ const auth = async (req, res, next) => {
     }
 };
 
-// Middleware to verify refresh token
 const verifyRefreshToken = async (req, res, next) => {
     try {
         const cookies = parse(req.headers.cookie || '');
@@ -88,7 +107,6 @@ const verifyRefreshToken = async (req, res, next) => {
         try {
             const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET || 'fallback-secret');
 
-            // Check if token is expired
             if (decoded.exp && Date.now() >= decoded.exp * 1000) {
                 return res.status(401).json({
                     message: 'Refresh token expired',
@@ -96,28 +114,22 @@ const verifyRefreshToken = async (req, res, next) => {
                 });
             }
 
-            // Get user and verify refresh token
-            const user = await User.findById(decoded.userId);
-            if (!user) {
-                return res.status(401).json({
-                    message: 'User not found',
-                    code: 'USER_NOT_FOUND'
-                });
-            }
+            // Single query: join user + refresh token check
+            const { rows } = await query(`
+                SELECT u.*, rt.token AS rt_token
+                FROM users u
+                JOIN refresh_tokens rt ON rt.user_id = u.id
+                WHERE u.id = $1 AND rt.token = $2 AND rt.revoked = false
+            `, [decoded.userId, refreshToken]);
 
-            // Check if refresh token exists in user's refresh tokens
-            const tokenExists = user.refreshTokens.some(token =>
-                token.token === refreshToken && !token.revoked
-            );
-
-            if (!tokenExists) {
+            if (rows.length === 0) {
                 return res.status(401).json({
                     message: 'Invalid refresh token',
                     code: 'INVALID_REFRESH_TOKEN'
                 });
             }
 
-            req.user = user;
+            req.user = User.rowToUser(rows[0]);
             req.refreshToken = refreshToken;
             next();
         } catch (jwtError) {
@@ -144,7 +156,6 @@ const verifyRefreshToken = async (req, res, next) => {
     }
 };
 
-// Optional auth middleware (for routes that can work with or without auth)
 const optionalAuth = async (req, res, next) => {
     try {
         const authHeader = req.header('Authorization');
@@ -153,7 +164,7 @@ const optionalAuth = async (req, res, next) => {
 
             try {
                 const decoded = jwt.verify(accessToken, process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET || 'fallback-secret');
-                const user = await User.findById(decoded.userId).select('-password -refreshTokens');
+                const user = await findUserLightweight(decoded.userId);
                 if (user && user.isActive) {
                     req.user = user;
                 }

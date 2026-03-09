@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Plus, Edit, Trash2, X, BookOpen, Award, ArrowLeft, GraduationCap, Menu, BarChart3, Calendar, Settings, User } from 'lucide-react';
-import Footer from './Footer';
+import { Plus, Edit, Trash2, X, BookOpen, Award, ArrowLeft, GraduationCap, Menu, BarChart3, Calendar, Settings, User, FileText, Layout } from 'lucide-react';
 import api from '../utils/api';
 import { Link } from 'react-router-dom';
 
@@ -123,7 +122,7 @@ const CourseDetail = () => {
         }
     };
 
-    const handleDeleteCourse = async () => {
+    const handleDeleteCourse = async () => { // eslint-disable-line no-unused-vars
 
 
         try {
@@ -288,6 +287,13 @@ const CourseDetail = () => {
                             <Plus className="h-5 w-5" />
                             <span>Add Assignment</span>
                         </button>
+                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 mt-4">IMPORT SCHEME</div>
+                        <Link to={`/import/syllabus/${course?.id}`} className="w-full flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
+                            <FileText className="h-5 w-5" /><span>From Syllabus</span>
+                        </Link>
+                        <Link to={`/import/templates/${course?.id}`} className="w-full flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
+                            <Layout className="h-5 w-5" /><span>From Template</span>
+                        </Link>
                     </div>
 
                     <div className="mt-auto pt-6 border-t border-gray-200">

@@ -1,12 +1,11 @@
 import React from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { BookOpen, Plus, User, LogOut, Home, Calendar } from 'lucide-react';
+import { BookOpen, User, LogOut, Home, Calendar } from 'lucide-react';
 
 const Navbar = () => {
     const { logout, user } = useAuth();
     const location = useLocation();
-    const navigate = useNavigate();
 
     const getPageTitle = () => {
         switch (location.pathname) {

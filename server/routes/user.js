@@ -10,11 +10,9 @@ const {
 const router = express.Router();
 
 // @route   GET /api/user/profile
-// @desc    Get user profile
-// @access  Private
 router.get('/profile', auth, async (req, res) => {
     try {
-        const user = await User.findById(req.user._id).select('-password -refreshTokens');
+        const user = await User.findById(req.user.id, { excludeSecrets: true });
         res.json({
             user,
             code: 'PROFILE_RETRIEVED'
@@ -29,23 +27,18 @@ router.get('/profile', auth, async (req, res) => {
 });
 
 // @route   PUT /api/user/profile
-// @desc    Update user profile
-// @access  Private
 router.put('/profile',
     auth,
     sanitizeInput,
     validate(profileUpdateSchema),
     async (req, res) => {
         try {
-            const updatedUser = await User.findByIdAndUpdate(
-                req.user._id,
-                req.body,
-                { new: true, runValidators: true }
-            ).select('-password -refreshTokens');
+            const updatedUser = await User.updateUser(req.user.id, req.body);
+            const publicUser = User.userToPublic(updatedUser);
 
             res.json({
                 message: 'Profile updated successfully',
-                user: updatedUser,
+                user: publicUser,
                 code: 'PROFILE_UPDATED'
             });
         } catch (error) {
@@ -59,8 +52,6 @@ router.put('/profile',
 );
 
 // @route   PUT /api/user/password
-// @desc    Change user password
-// @access  Private
 router.put('/password',
     auth,
     sanitizeInput,
@@ -68,10 +59,10 @@ router.put('/password',
     async (req, res) => {
         try {
             const { currentPassword, newPassword } = req.body;
-            const user = await User.findById(req.user._id);
+            const user = await User.findById(req.user.id);
 
             // Verify current password
-            const isMatch = await user.comparePassword(currentPassword);
+            const isMatch = await User.comparePassword(user.password, currentPassword);
             if (!isMatch) {
                 return res.status(400).json({
                     message: 'Current password is incorrect',
@@ -79,9 +70,8 @@ router.put('/password',
                 });
             }
 
-            // Update password
-            user.password = newPassword;
-            await user.save();
+            // Update password (handles strength + history check)
+            await User.changePassword(req.user.id, newPassword);
 
             res.json({
                 message: 'Password updated successfully',
@@ -113,26 +103,14 @@ router.put('/password',
 );
 
 // @route   GET /api/user/sessions
-// @desc    Get user's active sessions
-// @access  Private
 router.get('/sessions', auth, async (req, res) => {
     try {
-        const user = await User.findById(req.user._id).select('refreshTokens');
-
-        const activeSessions = user.refreshTokens
-            .filter(token => !token.revoked && token.expiresAt > new Date())
-            .map(token => ({
-                id: token._id,
-                userAgent: token.userAgent,
-                ipAddress: token.ipAddress,
-                createdAt: token.createdAt,
-                expiresAt: token.expiresAt
-            }));
+        const sessionInfo = await User.getSessionInfo(req.user.id);
 
         res.json({
-            sessions: activeSessions,
-            count: activeSessions.length,
-            maxSessions: user.maxSessions,
+            sessions: sessionInfo.sessions,
+            count: sessionInfo.count,
+            maxSessions: sessionInfo.maxSessions,
             code: 'SESSIONS_RETRIEVED'
         });
     } catch (error) {
@@ -145,23 +123,15 @@ router.get('/sessions', auth, async (req, res) => {
 });
 
 // @route   DELETE /api/user/sessions/:sessionId
-// @desc    Revoke a specific session
-// @access  Private
 router.delete('/sessions/:sessionId', auth, async (req, res) => {
     try {
-        const user = await User.findById(req.user._id);
-        const sessionId = req.params.sessionId;
-
-        const session = user.refreshTokens.id(sessionId);
-        if (!session) {
+        const result = await User.revokeSession(req.user.id, req.params.sessionId);
+        if (!result) {
             return res.status(404).json({
                 message: 'Session not found',
                 code: 'SESSION_NOT_FOUND'
             });
         }
-
-        user.revokeRefreshToken(session.token);
-        await user.save();
 
         res.json({
             message: 'Session revoked successfully',
@@ -177,17 +147,9 @@ router.delete('/sessions/:sessionId', auth, async (req, res) => {
 });
 
 // @route   DELETE /api/user/account
-// @desc    Delete user account
-// @access  Private
 router.delete('/account', auth, async (req, res) => {
     try {
-        const user = req.user;
-
-        // TODO: Delete all associated courses
-        // await Course.deleteMany({ user: user._id });
-
-        // Delete the user
-        await User.findByIdAndDelete(user._id);
+        await User.deleteUser(req.user.id);
 
         res.json({
             message: 'Account deleted successfully',
@@ -203,14 +165,9 @@ router.delete('/account', auth, async (req, res) => {
 });
 
 // @route   GET /api/user/export-data
-// @desc    Export user data
-// @access  Private
 router.get('/export-data', auth, async (req, res) => {
     try {
-        const user = await User.findById(req.user._id).select('-password -refreshTokens');
-
-        // TODO: Include courses data
-        // const courses = await Course.find({ user: user._id });
+        const user = await User.findById(req.user.id, { excludeSecrets: true });
 
         const exportData = {
             user: {
@@ -225,7 +182,6 @@ router.get('/export-data', auth, async (req, res) => {
                     lastLogin: user.lastLogin
                 }
             },
-            // courses: courses,
             exportDate: new Date().toISOString()
         };
 

@@ -3,7 +3,7 @@ const helmet = require('helmet');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const slowDown = require('express-slow-down');
-const mongoSanitize = require('express-mongo-sanitize');
+
 
 // Rate limiting for authentication routes
 const authLimiter = rateLimit({
@@ -116,9 +116,6 @@ const applySecurityMiddleware = (app) => {
     // Body parsing with size limits
     app.use(express.json({ limit: '100kb' }));
     app.use(express.urlencoded({ extended: true, limit: '100kb' }));
-
-    // MongoDB injection protection
-    app.use(mongoSanitize());
 
     // Apply rate limiting
     app.use('/api/auth', authLimiter, authSlowDown);

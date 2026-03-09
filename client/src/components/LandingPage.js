@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import Footer from "./Footer";
 import { useAuth } from "../contexts/AuthContext";
 import { Helmet } from "react-helmet-async";
 import {
@@ -11,7 +10,6 @@ import {
   Shield,
   Zap,
   ArrowRight,
-  CheckCircle,
   GraduationCap,
   LogOut,
   X,
@@ -23,7 +21,7 @@ import {
 
 const LandingPage = () => {
   const { isAuthenticated, logout } = useAuth();
-  const [animate, setAnimate] = useState(false);
+  const [, setAnimate] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openFAQ, setOpenFAQ] = useState(null);
 
