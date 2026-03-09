@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { percentageToGPA, formatGPA, getLetterGrade } from '../utils/scaleConverter';
+import { percentageToGPA, formatGPA } from '../utils/scaleConverter';
 import AddCourseModal from './AddCourseModal';
-import Footer from './Footer';
 import api from '../utils/api';
 import {
     BookOpen,
@@ -98,7 +97,7 @@ const Courses = () => {
         try {
             const response = await api.delete(`/gpa/courses/${courseId}`);
             if (response.data) {
-                setCourses((prev) => prev.filter((course) => course._id !== courseId));
+                setCourses((prev) => prev.filter((course) => course.id !== courseId));
             }
         } catch {
             setError('Failed to delete course');
@@ -148,7 +147,7 @@ const Courses = () => {
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
-                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-honolulu_blue"></div>
+                <div className="spinner-3d"></div>
             </div>
         );
     }
@@ -156,23 +155,23 @@ const Courses = () => {
     return (
         <div className="min-h-screen">
             {/* Mobile Header */}
-            <div className="lg:hidden bg-white border-b border-gray-200 p-4">
+            <div className="lg:hidden mobile-header-3d p-4">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                         <button
                             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                            className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                            className="p-2 rounded-md text-blue-400 hover:text-blue-800"
                         >
                             <Menu className="h-5 w-5" />
                         </button>
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center ">
-                            <BookOpen className="h-5 w-5 text-black" />
+                        <div className="icon-3d w-8 h-8 rounded-lg flex items-center justify-center">
+                            <BookOpen className="h-4 w-4" />
                         </div>
-                        <span className="text-xl font-semibold text-gray-900">Courses</span>
+                        <span className="text-xl font-bold text-blue-900">Courses</span>
                     </div>
                     <Link
                         to="/"
-                        className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                        className="p-2 rounded-md text-blue-400 hover:text-blue-800"
                     >
                         <ArrowLeft className="h-5 w-5" />
                     </Link>
@@ -181,18 +180,18 @@ const Courses = () => {
 
             <div className="flex flex-col lg:flex-row lg:min-h-screen">
                 {/* Left Sidebar */}
-                <div className={`${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white border-b lg:border-b-0 lg:border-r border-gray-200 min-h-screen lg:min-h-full lg:max-h-screen lg:overflow-y-auto lg:sticky lg:top-0 p-4 lg:p-6 transition-transform duration-300 ease-in-out lg:transition-none flex flex-col`}>
+                <div className={`${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-50 w-64 sidebar-3d border-b lg:border-b-0 min-h-screen lg:min-h-full lg:max-h-screen lg:overflow-y-auto lg:sticky lg:top-0 p-4 lg:p-6 transition-transform duration-300 ease-in-out lg:transition-none flex flex-col`}>
                     {/* Mobile Close Button */}
                     <div className="lg:hidden flex items-center justify-between mb-6">
                         <div className="flex items-center space-x-2">
-                            <div className="w-8 h-8 rounded-lg flex items-center justify-center ">
-                                <GraduationCap className="h-5 w-5 text-black" />
+                            <div className="icon-3d w-8 h-8 rounded-lg flex items-center justify-center">
+                                <GraduationCap className="h-4 w-4" />
                             </div>
-                            <span className="text-xl font-semibold text-gray-900">GPAConnect</span>
+                            <span className="text-xl font-bold text-blue-900">GPAConnect</span>
                         </div>
                         <button
                             onClick={() => setIsSidebarOpen(false)}
-                            className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                            className="p-2 rounded-md text-blue-400 hover:text-blue-800"
                         >
                             <X className="h-5 w-5" />
                         </button>
@@ -200,43 +199,43 @@ const Courses = () => {
 
                     {/* Logo - hidden on mobile since it's in the header */}
                     <div className="hidden lg:flex items-center space-x-2 my-8">
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center ">
-                            <GraduationCap className="h-5 w-5 text-black" />
+                        <div className="icon-3d w-8 h-8 rounded-lg flex items-center justify-center">
+                            <GraduationCap className="h-4 w-4" />
                         </div>
-                        <span className="text-xl font-semibold text-gray-900">GPAConnect</span>
+                        <span className="text-xl font-bold text-blue-900">GPAConnect</span>
                     </div>
 
                     {/* Navigation */}
                     <nav className="space-y-2 mb-6">
-                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">NAVIGATION</div>
+                        <div className="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-3">NAVIGATION</div>
                         <Link
                             to="/"
-                            className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                            className="flex items-center space-x-3 px-3 py-2 text-blue-400 nav-item-hover rounded-lg transition-colors"
                         >
                             <BarChart3 className="h-5 w-5" />
                             <span>Dashboard</span>
                         </Link>
-                        <div className="flex items-center space-x-3 px-3 py-2 bg-blue-50 text-black rounded-lg">
+                        <div className="flex items-center space-x-3 px-3 py-2 nav-item-active text-blue-900 rounded-lg">
                             <BookOpen className="h-5 w-5" />
                             <span>Courses</span>
                         </div>
                         <Link
                             to="/calendar"
-                            className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                            className="flex items-center space-x-3 px-3 py-2 text-blue-400 nav-item-hover rounded-lg transition-colors"
                         >
                             <Calendar className="h-5 w-5" />
                             <span>Calendar</span>
                         </Link>
                         <Link
                             to="/settings"
-                            className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                            className="flex items-center space-x-3 px-3 py-2 text-blue-400 nav-item-hover rounded-lg transition-colors"
                         >
                             <Settings className="h-5 w-5" />
                             <span>GPA Settings</span>
                         </Link>
                         <Link
                             to="/account"
-                            className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                            className="flex items-center space-x-3 px-3 py-2 text-blue-400 nav-item-hover rounded-lg transition-colors"
                         >
                             <User className="h-5 w-5" />
                             <span>Account</span>
@@ -245,10 +244,10 @@ const Courses = () => {
 
                     {/* Quick Actions */}
                     <div className="mb-6">
-                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">QUICK ACTIONS</div>
+                        <div className="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-3">QUICK ACTIONS</div>
                         <button
                             onClick={() => setIsAddCourseModalOpen(true)}
-                            className="w-full flex items-center space-x-3 px-3 py-2 bg-honolulu_blue hover:bg-blue_green text-white font-medium rounded-lg transition-colors"
+                            className="w-full flex items-center space-x-3 px-3 py-2 btn-3d-primary font-medium rounded-lg transition-colors"
                         >
                             <Plus className="h-5 w-5" />
                             <span>Add Course</span>
@@ -256,10 +255,10 @@ const Courses = () => {
                     </div>
 
                     {/* Home Button - Bottom of Sidebar */}
-                    <div className="mt-auto pt-6 border-t border-gray-200">
+                    <div className="mt-auto pt-6 border-t border-white/40">
                         <Link
                             to="/"
-                            className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors w-full"
+                            className="flex items-center space-x-3 px-3 py-2 text-blue-400 nav-item-hover rounded-lg transition-colors w-full"
                         >
                             <ArrowLeft className="h-5 w-5" />
                             <span>Back to Dashboard</span>
@@ -270,7 +269,7 @@ const Courses = () => {
                 {/* Overlay for mobile sidebar */}
                 {isSidebarOpen && (
                     <div
-                        className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+                        className="lg:hidden fixed inset-0 modal-overlay-3d z-40"
                         onClick={() => setIsSidebarOpen(false)}
                     />
                 )}
@@ -279,7 +278,7 @@ const Courses = () => {
                 <div className="flex-1 p-4 sm:p-6 lg:p-8">
                     {/* Error Display */}
                     {error && (
-                        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+                        <div className="alert-error-3d px-4 py-3 rounded-lg mb-6">
                             {error}
                         </div>
                     )}
@@ -297,23 +296,23 @@ const Courses = () => {
                     </div>
 
                     {/* Search + Filters */}
-                    <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 mb-6">
+                    <div className="card-3d-static rounded-xl p-4 sm:p-6 mb-6">
                         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
                             {/* Search */}
                             <div className="flex-1 max-w-md">
                                 <div className="relative">
-                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-blue-400" />
                                     <input
                                         type="text"
                                         placeholder="Search courses..."
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        className="w-full pl-10 pr-4 py-2 input-3d"
                                     />
                                     {searchTerm && (
                                         <button
                                             onClick={() => setSearchTerm('')}
-                                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-blue-400 hover:text-blue-600"
                                         >
                                             <X className="h-4 w-4" />
                                         </button>
@@ -324,12 +323,12 @@ const Courses = () => {
                             {/* View Toggle and Filters */}
                             <div className="flex items-center space-x-3">
                                 {/* View Mode Toggle */}
-                                <div className="flex items-center bg-gray-100 rounded-lg p-1">
+                                <div className="flex items-center scale-tab-bar rounded-lg p-1">
                                     <button
                                         onClick={() => setViewMode('table')}
                                         className={`p-2 rounded-md transition-colors ${viewMode === 'table'
-                                            ? 'bg-white text-honolulu_blue shadow-sm'
-                                            : 'text-gray-600 hover:text-gray-900'
+                                            ? 'tab-3d-active text-blue-600'
+                                            : 'text-blue-400'
                                             }`}
                                         title="Table View"
                                     >
@@ -338,8 +337,8 @@ const Courses = () => {
                                     <button
                                         onClick={() => setViewMode('grid')}
                                         className={`p-2 rounded-md transition-colors ${viewMode === 'grid'
-                                            ? 'bg-white text-honolulu_blue shadow-sm'
-                                            : 'text-gray-600 hover:text-gray-900'
+                                            ? 'tab-3d-active text-blue-600'
+                                            : 'text-blue-400'
                                             }`}
                                         title="Grid View"
                                     >
@@ -350,7 +349,7 @@ const Courses = () => {
                                 {/* Filter Toggle */}
                                 <button
                                     onClick={() => setShowFilters(!showFilters)}
-                                    className="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-gray-700 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                                    className="flex items-center space-x-2 px-3 py-2 text-blue-400 hover:text-blue-600 font-medium border border-white/40 rounded-lg transition-colors text-sm"
                                 >
                                     <Filter className="h-4 w-4" />
                                     <span className="hidden sm:inline">Filters</span>
@@ -365,16 +364,16 @@ const Courses = () => {
 
                         {/* Filters */}
                         {showFilters && (
-                            <div className="mt-4 pt-4 border-t border-gray-200">
+                            <div className="mt-4 pt-4 border-t border-white/40">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        <label className="block text-sm font-medium text-blue-900 mb-2">
                                             Semester
                                         </label>
                                         <select
                                             value={filterSemester}
                                             onChange={(e) => setFilterSemester(e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            className="w-full px-3 py-2 select-3d-native"
                                         >
                                             <option value="all">All Semesters</option>
                                             {getUniqueSemesters().map((semester) => (
@@ -385,13 +384,13 @@ const Courses = () => {
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        <label className="block text-sm font-medium text-blue-900 mb-2">
                                             Year
                                         </label>
                                         <select
                                             value={filterYear}
                                             onChange={(e) => setFilterYear(e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            className="w-full px-3 py-2 select-3d-native"
                                         >
                                             <option value="all">All Years</option>
                                             {getUniqueYears().map((year) => (
@@ -409,9 +408,9 @@ const Courses = () => {
                     {/* Courses Display */}
                     {filteredCourses.length === 0 ? (
                         <div className="text-center py-12">
-                            <BookOpen className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                            <p className="text-gray-500 mb-2">No courses found</p>
-                            <p className="text-sm text-gray-400 mb-4">
+                            <BookOpen className="h-12 w-12 mx-auto mb-4 text-blue-300" />
+                            <p className="text-blue-400 mb-2">No courses found</p>
+                            <p className="text-sm text-blue-300 mb-4">
                                 {searchTerm || filterSemester !== 'all' || filterYear !== 'all'
                                     ? 'Try adjusting your filters or search terms'
                                     : 'Get started by adding your first course'}
@@ -422,59 +421,59 @@ const Courses = () => {
                         <>
                             {/* Results Count */}
                             <div className="mb-4">
-                                <p className="text-sm text-gray-600">
+                                <p className="text-sm text-blue-400">
                                     Showing {filteredCourses.length} of {courses.length} courses
                                 </p>
                             </div>
 
                             {/* Table View */}
                             {viewMode === 'table' && (
-                                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                                <div className="table-3d-wrapper overflow-hidden">
                                     <div className="overflow-x-auto">
-                                        <table className="min-w-full divide-y divide-gray-200">
-                                            <thead className="bg-gray-50">
+                                        <table className="min-w-full divide-y divide-white/40">
+                                            <thead className="table-3d-header">
                                                 <tr>
-                                                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-blue-400 uppercase tracking-wider">
                                                         Course
                                                     </th>
-                                                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-blue-400 uppercase tracking-wider">
                                                         Term
                                                     </th>
-                                                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-blue-400 uppercase tracking-wider">
                                                         Credits
                                                     </th>
-                                                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-blue-400 uppercase tracking-wider">
                                                         Grade
                                                     </th>
-                                                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-blue-400 uppercase tracking-wider">
                                                         GPA
                                                     </th>
-                                                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-medium text-blue-400 uppercase tracking-wider">
                                                         Actions
                                                     </th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="bg-white divide-y divide-gray-200">
+                                            <tbody className="divide-y divide-white/40">
                                                 {filteredCourses.map((course) => (
-                                                    <tr key={course._id} className="hover:bg-gray-50">
+                                                    <tr key={course.id} className="table-3d-row">
                                                         <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                                                             <div className="flex items-center">
                                                                 <div className="ml-3">
-                                                                    <div className="text-sm font-medium text-gray-900">
+                                                                    <div className="text-sm font-medium text-blue-900">
                                                                         {course.name}
                                                                     </div>
                                                                     {course.description && (
-                                                                        <div className="text-sm text-gray-500 truncate max-w-xs">
+                                                                        <div className="text-sm text-blue-400 truncate max-w-xs">
                                                                             {course.description}
                                                                         </div>
                                                                     )}
                                                                 </div>
                                                             </div>
                                                         </td>
-                                                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-blue-900">
                                                             {course.semester || 'N/A'} {course.year || ''}
                                                         </td>
-                                                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-blue-900">
                                                             {course.credits || 'N/A'}
                                                         </td>
                                                         <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
@@ -489,21 +488,21 @@ const Courses = () => {
                                                                 )}
                                                             </div>
                                                         </td>
-                                                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                        <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-blue-900">
                                                             {formatGradePoints(course)}
                                                         </td>
                                                         <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                             <div className="flex items-center space-x-2">
                                                                 <Link
-                                                                    to={`/course/${course._id}`}
-                                                                    className="text-honolulu_blue hover:text-blue_green p-1 rounded hover:bg-vivid_sky_blue-100"
+                                                                    to={`/course/${course.id}`}
+                                                                    className="text-blue-500 hover:text-blue-800 p-1 rounded hover:bg-vivid_sky_blue-100"
                                                                     title="View Course"
                                                                 >
                                                                     <Eye className="h-4 w-4" />
                                                                 </Link>
                                                                 {course.gradeOverride !== undefined && (
                                                                     <button
-                                                                        onClick={() => handleRevertOverride(course._id)}
+                                                                        onClick={() => handleRevertOverride(course.id)}
                                                                         className="text-orange-600 hover:text-orange-900 p-1 rounded hover:bg-orange-50"
                                                                         title="Revert to Original Grade"
                                                                     >
@@ -511,7 +510,7 @@ const Courses = () => {
                                                                     </button>
                                                                 )}
                                                                 <button
-                                                                    onClick={() => handleDeleteCourse(course._id)}
+                                                                    onClick={() => handleDeleteCourse(course.id)}
                                                                     className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
                                                                     title="Delete Course"
                                                                 >
@@ -532,13 +531,13 @@ const Courses = () => {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
                                     {filteredCourses.map((course) => (
                                         <CourseCard
-                                            key={course._id}
+                                            key={course.id}
                                             course={course}
                                             getGradeColor={getGradeColor}
                                             formatGradePoints={formatGradePoints}
-                                            onView={() => window.location.href = `/course/${course._id}`}
-                                            onRevertOverride={() => handleRevertOverride(course._id)}
-                                            onDelete={() => handleDeleteCourse(course._id)}
+                                            onView={() => window.location.href = `/course/${course.id}`}
+                                            onRevertOverride={() => handleRevertOverride(course.id)}
+                                            onDelete={() => handleDeleteCourse(course.id)}
                                         />
                                     ))}
                                 </div>
@@ -562,12 +561,12 @@ const Courses = () => {
 
 // Course Card Component for Grid View
 const CourseCard = ({ course, getGradeColor, formatGradePoints, onView, onRevertOverride, onDelete }) => (
-    <div className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-lg transition-shadow duration-200">
+    <div className="card-3d rounded-xl p-4 hover:shadow-lg transition-shadow duration-200">
         <div className="flex items-start justify-between mb-3">
             <div className="flex items-center space-x-1">
                 <button
                     onClick={onView}
-                    className="text-honolulu_blue hover:text-blue_green p-1 rounded hover:bg-vivid_sky_blue-100"
+                    className="text-blue-500 hover:text-blue-800 p-1 rounded hover:bg-vivid_sky_blue-100"
                     title="View Course"
                 >
                     <Eye className="h-4 w-4" />
@@ -591,35 +590,35 @@ const CourseCard = ({ course, getGradeColor, formatGradePoints, onView, onRevert
             </div>
         </div>
 
-        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">{course.name}</h3>
+        <h3 className="font-semibold text-blue-900 mb-2 line-clamp-2">{course.name}</h3>
 
         {course.description && (
-            <p className="text-sm text-gray-600 mb-3 line-clamp-2">{course.description}</p>
+            <p className="text-sm text-blue-400 mb-3 line-clamp-2">{course.description}</p>
         )}
 
         <div className="space-y-2">
             <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Term:</span>
-                <span className="text-gray-900">{course.semester || 'N/A'} {course.year || ''}</span>
+                <span className="text-blue-400">Term:</span>
+                <span className="text-blue-900">{course.semester || 'N/A'} {course.year || ''}</span>
             </div>
             <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Credits:</span>
-                <span className="text-gray-900">{course.credits || 'N/A'}</span>
+                <span className="text-blue-400">Credits:</span>
+                <span className="text-blue-900">{course.credits || 'N/A'}</span>
             </div>
             <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Grade:</span>
+                <span className="text-blue-400">Grade:</span>
                 <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getGradeColor(course.gradeOverride !== undefined ? course.gradeOverride : course.grade)}`}>
                     {course.gradeOverride !== undefined ? course.gradeOverride : course.grade}
                 </span>
             </div>
             <div className="flex justify-between text-sm">
-                <span className="text-gray-500">GPA:</span>
-                <span className="text-gray-900">{formatGradePoints(course)}</span>
+                <span className="text-blue-400">GPA:</span>
+                <span className="text-blue-900">{formatGradePoints(course)}</span>
             </div>
         </div>
 
         {course.gradeOverride !== undefined && (
-            <div className="mt-3 pt-2 border-t border-gray-100">
+            <div className="mt-3 pt-2 border-t border-white/40">
                 <span className="text-xs text-orange-600 bg-orange-100 px-2 py-1 rounded-full">
                     Grade Override Active
                 </span>
@@ -630,14 +629,14 @@ const CourseCard = ({ course, getGradeColor, formatGradePoints, onView, onRevert
 
 // Small reusable stat card
 const StatCard = ({ label, value, Icon }) => (
-    <div className=" text-honolulu_blue rounded-xl p-4 py-6 sm:p-6 border  border-gray-100 shadow-sm">
+    <div className="card-3d-static rounded-xl p-4 py-6 sm:p-6">
         <div className="flex items-center justify-between">
             <div>
-                <p className="text-xs sm:text-sm font-medium text-gray-600">{label}</p>
-                <p className="text-lg sm:text-2xl font-bold ">{value}</p>
+                <p className="text-xs sm:text-sm font-medium text-blue-400">{label}</p>
+                <p className="text-lg sm:text-2xl font-bold text-blue-600">{value}</p>
             </div>
-            <div className="w-10 h-10 sm:w-12 sm:h-12  rounded-lg flex items-center justify-center">
-                <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-gray-600" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center">
+                <Icon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-400" />
             </div>
         </div>
     </div>

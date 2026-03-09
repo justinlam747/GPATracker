@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
 import { User, Mail, GraduationCap, Calendar, Save, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 
 const Profile = () => {
@@ -20,12 +21,10 @@ const Profile = () => {
 
     // Password form state
     const [passwordData, setPasswordData] = useState({
-        currentPassword: '',
         newPassword: '',
         confirmPassword: ''
     });
     const [showPasswords, setShowPasswords] = useState({
-        current: false,
         new: false,
         confirm: false
     });
@@ -81,28 +80,18 @@ const Profile = () => {
         }
 
         try {
-            const response = await fetch('/api/user/password', {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify({
-                    currentPassword: passwordData.currentPassword,
-                    newPassword: passwordData.newPassword
-                })
+            const { error } = await supabase.auth.updateUser({
+                password: passwordData.newPassword
             });
 
-            if (response.ok) {
+            if (error) {
+                setMessage({ type: 'error', text: error.message || 'Failed to update password' });
+            } else {
                 setMessage({ type: 'success', text: 'Password updated successfully!' });
                 setPasswordData({
-                    currentPassword: '',
                     newPassword: '',
                     confirmPassword: ''
                 });
-            } else {
-                const data = await response.json();
-                setMessage({ type: 'error', text: data.message || 'Failed to update password' });
             }
         } catch (error) {
             setMessage({ type: 'error', text: 'Failed to update password' });
@@ -119,18 +108,18 @@ const Profile = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen">
             {/* Header */}
-            <div className="bg-white border-b border-gray-200 px-6 py-4">
+            <div className="mobile-header-3d px-6 py-4">
                 <div className="flex items-center justify-between">
                     {/* Left side - Page Title */}
                     <div className="flex items-center space-x-4">
-                        <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                            <User className="h-5 w-5 text-white" />
+                        <div className="icon-3d w-10 h-10 rounded-xl flex items-center justify-center">
+                            <User className="h-5 w-5" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-bold text-gray-900">Profile Settings</h1>
-                            <p className="text-sm text-gray-600">Manage your account information and preferences</p>
+                            <h1 className="text-2xl font-bold text-blue-900">Profile Settings</h1>
+                            <p className="text-sm text-blue-400">Manage your account information and preferences</p>
                         </div>
                     </div>
 
@@ -138,7 +127,7 @@ const Profile = () => {
                     <div className="flex items-center space-x-4">
                         <Link
                             to="/"
-                            className="text-gray-600 hover:text-blue-600 transition-colors flex items-center space-x-2 text-sm font-medium"
+                            className="text-blue-400 hover:text-blue-800 transition-colors flex items-center space-x-2 text-sm font-medium"
                         >
                             <ArrowLeft className="h-4 w-4" />
                             <span>Dashboard</span>
@@ -148,18 +137,18 @@ const Profile = () => {
             </div>
 
             <div className="max-w-4xl mx-auto px-6 py-6">
-                <div className="bg-white rounded-lg shadow">
+                <div className="card-3d-static rounded-xl">
                     {/* Tabs */}
-                    <div className="border-b border-gray-200">
+                    <div className="border-b border-white/40">
 
                 {/* Tabs */}
-                <div className="border-b border-gray-200">
+                <div className="border-b border-white/40">
                     <nav className="flex space-x-8 px-6">
                         <button
                             onClick={() => setActiveTab('profile')}
                             className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'profile'
                                 ? 'border-blue-500 text-blue-600'
-                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                : 'border-transparent text-blue-400 hover:text-blue-600 hover:border-blue-300'
                                 }`}
                         >
                             Profile Information
@@ -168,7 +157,7 @@ const Profile = () => {
                             onClick={() => setActiveTab('password')}
                             className={`py-4 px-1 border-b-2 font-medium text-sm ${activeTab === 'password'
                                 ? 'border-blue-500 text-blue-600'
-                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                : 'border-transparent text-blue-400 hover:text-blue-600 hover:border-blue-300'
                                 }`}
                         >
                             Change Password
@@ -180,8 +169,8 @@ const Profile = () => {
                 <div className="p-6">
                     {message.text && (
                         <div className={`mb-6 px-4 py-3 rounded-md ${message.type === 'success'
-                            ? 'bg-green-50 border border-green-200 text-green-700'
-                            : 'bg-red-50 border border-red-200 text-red-700'
+                            ? 'alert-success-3d'
+                            : 'alert-error-3d'
                             }`}>
                             {message.text}
                         </div>
@@ -191,12 +180,12 @@ const Profile = () => {
                         <form onSubmit={handleProfileSubmit} className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
+                                    <label htmlFor="firstName" className="block text-sm font-medium text-blue-900 mb-2">
                                         First Name
                                     </label>
                                     <div className="relative">
                                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <User className="h-5 w-5 text-gray-400" />
+                                            <User className="h-5 w-5 text-blue-400" />
                                         </div>
                                         <input
                                             type="text"
@@ -204,19 +193,19 @@ const Profile = () => {
                                             name="firstName"
                                             value={profileData.firstName}
                                             onChange={handleProfileChange}
-                                            className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                            className="input-3d w-full pl-10"
                                             required
                                         />
                                     </div>
                                 </div>
 
                                 <div>
-                                    <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
+                                    <label htmlFor="lastName" className="block text-sm font-medium text-blue-900 mb-2">
                                         Last Name
                                     </label>
                                     <div className="relative">
                                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <User className="h-5 w-5 text-gray-400" />
+                                            <User className="h-5 w-5 text-blue-400" />
                                         </div>
                                         <input
                                             type="text"
@@ -224,7 +213,7 @@ const Profile = () => {
                                             name="lastName"
                                             value={profileData.lastName}
                                             onChange={handleProfileChange}
-                                            className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                            className="input-3d w-full pl-10"
                                             required
                                         />
                                     </div>
@@ -232,21 +221,21 @@ const Profile = () => {
                             </div>
 
                             <div>
-                                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                                <label htmlFor="email" className="block text-sm font-medium text-blue-900 mb-2">
                                     Email Address
                                 </label>
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <Mail className="h-5 w-5 mb-6 text-gray-400" />
+                                        <Mail className="h-5 w-5 mb-6 text-blue-400" />
                                     </div>
                                     <input
                                         type="email"
                                         id="email"
                                         value={user?.email}
-                                        className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-500"
+                                        className="input-3d w-full pl-10 bg-blue-50/30 text-blue-400"
                                         disabled
                                     />
-                                    <p className="mt-1 text-sm text-gray-500">Email cannot be changed</p>
+                                    <p className="mt-1 text-sm text-blue-300">Email cannot be changed</p>
                                 </div>
                             </div>
 
@@ -255,12 +244,12 @@ const Profile = () => {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label htmlFor="graduationYear" className="block text-sm font-medium text-gray-700 mb-2">
+                                    <label htmlFor="graduationYear" className="block text-sm font-medium text-blue-900 mb-2">
                                         Graduation Year
                                     </label>
                                     <div className="relative">
                                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <Calendar className="h-5 w-5 text-gray-400" />
+                                            <Calendar className="h-5 w-5 text-blue-400" />
                                         </div>
                                         <input
                                             type="number"
@@ -270,19 +259,19 @@ const Profile = () => {
                                             onChange={handleProfileChange}
                                             min="2000"
                                             max="2030"
-                                            className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                            className="input-3d w-full pl-10"
                                             placeholder="2025"
                                         />
                                     </div>
                                 </div>
 
                                 <div>
-                                    <label htmlFor="institution" className="block text-sm font-medium text-gray-700 mb-2">
+                                    <label htmlFor="institution" className="block text-sm font-medium text-blue-900 mb-2">
                                         Institution
                                     </label>
                                     <div className="relative">
                                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <GraduationCap className="h-5 w-5 text-gray-400" />
+                                            <GraduationCap className="h-5 w-5 text-blue-400" />
                                         </div>
                                         <input
                                             type="text"
@@ -290,7 +279,7 @@ const Profile = () => {
                                             name="institution"
                                             value={profileData.institution}
                                             onChange={handleProfileChange}
-                                            className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                            className="input-3d w-full pl-10"
                                             placeholder="University/College name"
                                         />
                                     </div>
@@ -298,19 +287,19 @@ const Profile = () => {
                             </div>
 
                             <div>
-                                <label htmlFor="gpaScale" className="block text-sm font-medium text-gray-700 mb-2">
+                                <label htmlFor="gpaScale" className="block text-sm font-medium text-blue-900 mb-2">
                                     GPA Scale
                                 </label>
                                 <div className="relative">
                                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <GraduationCap className="h-5 w-5 text-gray-400" />
+                                        <GraduationCap className="h-5 w-5 text-blue-400" />
                                     </div>
                                     <select
                                         id="gpaScale"
                                         name="gpaScale"
                                         value={profileData.gpaScale}
                                         onChange={handleProfileChange}
-                                        className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                        className="input-3d w-full pl-10"
                                     >
                                         <option value="4.0">4.0 Scale (Standard)</option>
                                         <option value="4.3">4.3 Scale (A+ = 4.3)</option>
@@ -318,7 +307,7 @@ const Profile = () => {
                                         <option value="percentage">Percentage (0-100)</option>
                                     </select>
                                 </div>
-                                <p className="mt-1 text-sm text-gray-500">
+                                <p className="mt-1 text-sm text-blue-300">
                                     Choose how you want to see your GPA displayed. Assignments will always be in percentage.
                                 </p>
                             </div>
@@ -327,7 +316,7 @@ const Profile = () => {
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="inline-flex items-center px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="btn-3d-primary inline-flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <Save className="h-4 w-4 mr-2" />
                                     {loading ? 'Saving...' : 'Save Changes'}
@@ -338,37 +327,9 @@ const Profile = () => {
 
                     {activeTab === 'password' && (
                         <form onSubmit={handlePasswordSubmit} className="space-y-6">
-                            <div>
-                                <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                                    Current Password
-                                </label>
-                                <div className="relative">
-                                    <input
-                                        type={showPasswords.current ? 'text' : 'password'}
-                                        id="currentPassword"
-                                        name="currentPassword"
-                                        value={passwordData.currentPassword}
-                                        onChange={handlePasswordChange}
-                                        className="w-full pr-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                                        required
-                                    />
-                                    <button
-                                        type="button"
-                                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                                        onClick={() => togglePasswordVisibility('current')}
-                                    >
-                                        {showPasswords.current ? (
-                                            <EyeOff className="h-5 w-5 text-gray-400" />
-                                        ) : (
-                                            <Eye className="h-5 w-5 text-gray-400" />
-                                        )}
-                                    </button>
-                                </div>
-                            </div>
-
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                                    <label htmlFor="newPassword" className="block text-sm font-medium text-blue-900 mb-2">
                                         New Password
                                     </label>
                                     <div className="relative">
@@ -378,7 +339,7 @@ const Profile = () => {
                                             name="newPassword"
                                             value={passwordData.newPassword}
                                             onChange={handlePasswordChange}
-                                            className="w-full pr-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                            className="input-3d w-full pr-10"
                                             required
                                         />
                                         <button
@@ -387,16 +348,16 @@ const Profile = () => {
                                             onClick={() => togglePasswordVisibility('new')}
                                         >
                                             {showPasswords.new ? (
-                                                <EyeOff className="h-5 w-5 text-gray-400" />
+                                                <EyeOff className="h-5 w-5 text-blue-400" />
                                             ) : (
-                                                <Eye className="h-5 w-5 text-gray-400" />
+                                                <Eye className="h-5 w-5 text-blue-400" />
                                             )}
                                         </button>
                                     </div>
                                 </div>
 
                                 <div>
-                                    <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                                    <label htmlFor="confirmPassword" className="block text-sm font-medium text-blue-900 mb-2">
                                         Confirm New Password
                                     </label>
                                     <div className="relative">
@@ -406,7 +367,7 @@ const Profile = () => {
                                             name="confirmPassword"
                                             value={passwordData.confirmPassword}
                                             onChange={handlePasswordChange}
-                                            className="w-full pr-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                            className="input-3d w-full pr-10"
                                             required
                                         />
                                         <button
@@ -415,9 +376,9 @@ const Profile = () => {
                                             onClick={() => togglePasswordVisibility('confirm')}
                                         >
                                             {showPasswords.confirm ? (
-                                                <EyeOff className="h-5 w-5 text-gray-400" />
+                                                <EyeOff className="h-5 w-5 text-blue-400" />
                                             ) : (
-                                                <Eye className="h-5 w-5 text-gray-400" />
+                                                <Eye className="h-5 w-5 text-blue-400" />
                                             )}
                                         </button>
                                     </div>
@@ -428,7 +389,7 @@ const Profile = () => {
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="inline-flex items-center px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="btn-3d-primary inline-flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <Save className="h-4 w-4 mr-2" />
                                     {loading ? 'Updating...' : 'Update Password'}

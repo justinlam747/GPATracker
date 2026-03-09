@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { percentageToGPA, formatGPA, getLetterGrade, getGradeColor } from '../utils/scaleConverter';
+import { percentageToGPA } from '../utils/scaleConverter';
 import AddCourseModal from './AddCourseModal';
 import Footer from './Footer';
 import api from '../utils/api';
@@ -16,7 +16,6 @@ import {
     Award,
     Eye,
     RefreshCw,
-    Shield,
     Trash2,
     LogOut,
     FileText,
@@ -71,8 +70,12 @@ const Dashboard = () => {
         } catch (err) {
             if (err.response?.status === 429) {
                 setError('Too many requests. Please wait a moment and refresh the page.');
+            } else if (err.response?.status === 401) {
+                setError('Your session has expired. Please log in again.');
+            } else if (!err.response && (err.code === 'ECONNABORTED' || err.message?.includes('Network Error') || err.code === 'ERR_NETWORK')) {
+                setError('Unable to reach the server. Please make sure the API server is running and try again.');
             } else {
-                setError('Failed to fetch courses');
+                setError('Failed to fetch courses. Please try refreshing the page.');
             }
         } finally {
             setLoading(false);
@@ -157,7 +160,7 @@ const Dashboard = () => {
         try {
             const response = await api.delete(`/gpa/courses/${courseId}`);
             if (response.data) {
-                setCourses(prev => prev.filter(course => course._id !== courseId));
+                setCourses(prev => prev.filter(course => course.id !== courseId));
             }
         } catch (error) {
             setError('Failed to delete course');
@@ -213,7 +216,7 @@ const Dashboard = () => {
                             assignment: assignment.name,
                             dueDate: assignment.dueDate,
                             weight: assignment.weight,
-                            courseId: course._id
+                            courseId: course.id
                         });
                     }
                 });
@@ -277,7 +280,7 @@ const Dashboard = () => {
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
-                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-honolulu_blue"></div>
+                <div className="spinner-3d"></div>
             </div>
         );
     }
@@ -290,19 +293,19 @@ const Dashboard = () => {
 
 
     return (
-        <div className="min-h-screen lg:h-screen bg-gray-50 lg:overflow-hidden">
+        <div className="min-h-screen lg:h-screen lg:overflow-hidden">
             {/* Mobile Header */}
-            <div className="lg:hidden bg-white border-b border-gray-200 p-4">
+            <div className="lg:hidden mobile-header-3d p-4">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center">
-                            <GraduationCap className="h-5 w-5 text-black" />
+                        <div className="icon-3d w-8 h-8 rounded-lg flex items-center justify-center">
+                            <GraduationCap className="h-4 w-4" />
                         </div>
-                        <span className="text-xl font-semibold text-gray-900">GPAConnect</span>
+                        <span className="text-xl font-bold text-blue-900">GPAConnect</span>
                     </div>
                     <button
                         onClick={() => setSidebarOpen(true)}
-                        className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                        className="p-2 rounded-md text-blue-400 hover:text-blue-800"
                     >
                         <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -313,18 +316,18 @@ const Dashboard = () => {
 
             <div className="flex flex-col lg:flex-row lg:h-screen">
                 {/* Left Sidebar */}
-                <div className={`${sidebarOpen ? 'block' : 'hidden'} lg:block w-full lg:w-64 bg-white border-b lg:border-b-0 lg:border-r border-gray-200 min-h-screen lg:min-h-full lg:max-h-screen lg:overflow-y-auto lg:sticky lg:top-0 p-4 lg:p-6`}>
+                <div className={`${sidebarOpen ? 'block' : 'hidden'} lg:block w-full lg:w-64 sidebar-3d border-b lg:border-b-0 min-h-screen lg:min-h-full lg:max-h-screen lg:overflow-y-auto lg:sticky lg:top-0 p-4 lg:p-6`}>
                     {/* Mobile close button */}
                     <div className="flex items-center justify-between lg:hidden mb-4">
                         <div className="flex items-center space-x-2">
-                            <div className="w-8 h-8 rounded-lg flex items-center justify-center">
-                                <GraduationCap className="h-5 w-5 text-black" />
+                            <div className="icon-3d w-8 h-8 rounded-lg flex items-center justify-center">
+                                <GraduationCap className="h-4 w-4" />
                             </div>
-                            <span className="text-xl font-semibold text-gray-900">GPAConnect</span>
+                            <span className="text-xl font-bold text-blue-900">GPAConnect</span>
                         </div>
                         <button
                             onClick={() => setSidebarOpen(false)}
-                            className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                            className="p-2 rounded-md text-blue-400 hover:text-blue-800"
                         >
                             <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -334,7 +337,7 @@ const Dashboard = () => {
 
                     {/* Error Display */}
                     {error && (
-                        <div className="mb-6 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">
+                        <div className="mb-6 p-3 alert-error-3d rounded-lg text-sm">
                             {error}
                             {error.includes('Too many requests') && (
                                 <div className="mt-2 text-xs">
@@ -346,39 +349,39 @@ const Dashboard = () => {
 
                     {/* Logo - hidden on mobile since it's in the header */}
                     <div className="hidden lg:flex items-center space-x-2 my-8">
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center">
-                            <GraduationCap className="h-5 w-5 text-black" />
+                        <div className="icon-3d w-8 h-8 rounded-lg flex items-center justify-center">
+                            <GraduationCap className="h-4 w-4" />
                         </div>
-                        <span className="text-xl font-semibold text-gray-900">GPAConnect</span>
+                        <span className="text-xl font-bold text-blue-900">GPAConnect</span>
                     </div>
 
                     <nav className="space-y-2 mb-6">
-                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">NAVIGATION</div>
-                        <div className="flex items-center space-x-3 px-3 py-2 bg-blue-50 text-black rounded-lg">
+                        <div className="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-3">NAVIGATION</div>
+                        <div className="flex items-center space-x-3 px-3 py-2 nav-item-active text-blue-900 rounded-lg">
                             <BarChart3 className="h-5 w-5" />
                             <span>Dashboard</span>
                         </div>
                         <Link
                             to="/courses"
-                            className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                            className="flex items-center space-x-3 px-3 py-2 text-blue-400 nav-item-hover rounded-lg transition-colors"
                         >
                             <BookOpen className="h-5 w-5" />
                             <span>Courses</span>
                         </Link>
-                        <Link to="/calendar" className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
+                        <Link to="/calendar" className="flex items-center space-x-3 px-3 py-2 text-blue-400 nav-item-hover rounded-lg transition-colors">
                             <Calendar className="h-5 w-5" />
                             <span>Calendar</span>
                         </Link>
                         <Link
                             to="/settings"
-                            className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                            className="flex items-center space-x-3 px-3 py-2 text-blue-400 nav-item-hover rounded-lg transition-colors"
                         >
                             <Settings className="h-5 w-5" />
                             <span>GPA Settings</span>
                         </Link>
                         <Link
                             to="/account"
-                            className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                            className="flex items-center space-x-3 px-3 py-2 text-blue-400 nav-item-hover rounded-lg transition-colors"
                         >
                             <User className="h-5 w-5" />
                             <span>Account</span>
@@ -387,10 +390,10 @@ const Dashboard = () => {
 
                     {/* Quick Actions */}
                     <div className="mb-6">
-                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">QUICK ACTIONS</div>
+                        <div className="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-3">QUICK ACTIONS</div>
                         <button
                             onClick={() => setIsAddCourseModalOpen(true)}
-                            className="w-full flex items-center space-x-3 px-3 py-2 bg-honolulu_blue text-white font-medium rounded-lg transition-all duration-300 border hover:bg-blue_green border-gray-300"
+                            className="w-full flex items-center space-x-3 px-3 py-2 btn-3d-primary font-medium rounded-lg transition-all duration-300"
                         >
                             <Plus className="h-5 w-5" />
                             <span>Add Course</span>
@@ -398,7 +401,7 @@ const Dashboard = () => {
                     </div>
 
                     {/* Refresh Button */}
-                    <div className="mb-6 pt-6 border-t border-gray-200">
+                    <div className="mb-6 pt-6 border-t border-white/40">
                         <button
                             onClick={() => {
                                 const now = Date.now();
@@ -411,29 +414,29 @@ const Dashboard = () => {
                                 fetchCourses();
                             }}
                             disabled={loading}
-                            className="w-full flex items-center justify-start space-x-2 px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50"
+                            className="w-full flex items-center justify-start space-x-2 px-3 py-2 btn-3d-secondary text-blue-900 rounded-lg transition-colors disabled:opacity-50"
                         >
                             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
                             <span>{loading ? 'Refreshing...' : 'Refresh Data'}</span>
                         </button>
-                        <div className="mt-2 text-xs text-gray-500 text-center">
+                        <div className="mt-2 text-xs text-blue-300 text-center">
                             {lastRefresh > 0 && `Last refreshed: ${new Date(lastRefresh).toLocaleTimeString()}`}
                         </div>
                     </div>
 
                     {/* Legal Links */}
-                    <div className="mb-6 pt-6 border-t border-gray-200">
-                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">LEGAL</div>
+                    <div className="mb-6 pt-6 border-t border-white/40">
+                        <div className="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-3">LEGAL</div>
                         <Link
                             to="/terms-of-service"
-                            className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                            className="flex items-center space-x-3 px-3 py-2 text-blue-400 nav-item-hover rounded-lg transition-colors"
                         >
                             <FileText className="h-5 w-5" />
                             <span>Terms of Service</span>
                         </Link>
                         <Link
                             to="/privacy-policy"
-                            className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                            className="flex items-center space-x-3 px-3 py-2 text-blue-400 nav-item-hover rounded-lg transition-colors"
                         >
                             <Lock className="h-5 w-5" />
                             <span>Privacy Policy</span>
@@ -441,10 +444,10 @@ const Dashboard = () => {
                     </div>
 
                     {/* Logout Button */}
-                    <div className="mt-auto pt-6 border-t border-gray-200">
+                    <div className="mt-auto pt-6 border-t border-white/40">
                         <button
                             onClick={logout}
-                            className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors w-full text-left"
+                            className="flex items-center space-x-3 px-3 py-2 text-blue-400 nav-item-hover rounded-lg transition-colors w-full text-left"
                         >
                             <LogOut className="h-5 w-5" />
                             <span>Logout</span>
@@ -456,59 +459,59 @@ const Dashboard = () => {
                 <div className="flex-1 p-4 sm:p-6 lg:p-8 lg:overflow-y-auto lg:h-screen">
                     {/* Stats Grid */}
                     <div id="stats" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
-                        <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-100 shadow-sm">
+                        <div className="card-3d-static rounded-xl p-4 sm:p-6">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="text-xs sm:text-sm font-medium text-gray-600">Current GPA</p>
-                                    <p className="text-2xl sm:text-3xl font-bold text-honolulu_blue">{currentGPA.toFixed(2)}</p>
+                                    <p className="text-xs sm:text-sm font-medium text-blue-400">Current GPA</p>
+                                    <p className="text-2xl sm:text-3xl font-bold text-blue-600">{currentGPA.toFixed(2)}</p>
                                 </div>
                                 <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center">
-                                    <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-black" />
+                                    <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-blue-400" />
                                 </div>
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-100 shadow-sm">
+                        <div className="card-3d-static rounded-xl p-4 sm:p-6">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="text-xs sm:text-sm font-medium text-gray-600">Credits Achieved</p>
-                                    <p className="text-2xl sm:text-3xl font-bold text-honolulu_blue">{totalCredits}</p>
+                                    <p className="text-xs sm:text-sm font-medium text-blue-400">Credits Achieved</p>
+                                    <p className="text-2xl sm:text-3xl font-bold text-blue-600">{totalCredits}</p>
                                 </div>
                                 <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center">
-                                    <BookOpen className="h-5 w-5 sm:h-6 sm:w-6 text-black" />
+                                    <BookOpen className="h-5 w-5 sm:h-6 sm:w-6 text-blue-400" />
                                 </div>
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-100 shadow-sm">
+                        <div className="card-3d-static rounded-xl p-4 sm:p-6">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="text-xs sm:text-sm font-medium text-gray-600">Total Courses</p>
-                                    <p className="text-2xl sm:text-3xl font-bold text-honolulu_blue">{(courses || []).length}</p>
+                                    <p className="text-xs sm:text-sm font-medium text-blue-400">Total Courses</p>
+                                    <p className="text-2xl sm:text-3xl font-bold text-blue-600">{(courses || []).length}</p>
                                 </div>
                                 <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center">
-                                    <Target className="h-5 w-5 sm:h-6 sm:w-6 text-black" />
+                                    <Target className="h-5 w-5 sm:h-6 sm:w-6 text-blue-400" />
                                 </div>
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-100 shadow-sm">
+                        <div className="card-3d-static rounded-xl p-4 sm:p-6">
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="text-xs sm:text-sm font-medium text-gray-600">Grade Scale</p>
-                                    <p className="text-2xl sm:text-3xl font-bold text-honolulu_blue">{user?.gpaScale || '4.0'}</p>
+                                    <p className="text-xs sm:text-sm font-medium text-blue-400">Grade Scale</p>
+                                    <p className="text-2xl sm:text-3xl font-bold text-blue-600">{user?.gpaScale || '4.0'}</p>
                                 </div>
                                 <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center">
-                                    <Award className="h-5 w-5 sm:h-6 sm:w-6 text-black" />
+                                    <Award className="h-5 w-5 sm:h-6 sm:w-6 text-blue-400" />
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     {/* Course Performance Overview */}
-                    <div id="performance" className="bg-white rounded-xl border border-gray-100 shadow-sm mb-8">
-                        <div className="p-6 border-b border-gray-100">
-                            <h2 className="text-xl font-semibold text-gray-900">Course Performance Overview</h2>
+                    <div id="performance" className="card-3d-static rounded-xl mb-8">
+                        <div className="p-6 border-b border-white/40">
+                            <h2 className="text-xl font-semibold text-blue-900">Course Performance Overview</h2>
                         </div>
                         <div className="p-6">
                             {currentSemesterCourses.length > 0 ? (
@@ -573,11 +576,11 @@ const Dashboard = () => {
                                             grade: gradeValue,
                                             gradeType: gradeType,
                                             fullName: course.name,
-                                            courseId: course._id,
+                                            courseId: course.id,
                                             originalGrade: originalGrade
                                         };
                                     })}>
-                                        <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(37,99,235,0.08)" />
                                         <XAxis dataKey="name" angle={0} textAnchor="end" height={1} />
                                         <YAxis
                                             domain={[0, (dataMax) => {
@@ -629,29 +632,29 @@ const Dashboard = () => {
                                         <Line
                                             type="monotone"
                                             dataKey="grade"
-                                            stroke="#0077b6"
+                                            stroke="#2563eb"
                                             strokeWidth={3}
-                                            dot={{ fill: '#0077b6', strokeWidth: 2, r: 2 }}
-                                            activeDot={{ r: 2, stroke: '#0077b6', strokeWidth: 2 }}
+                                            dot={{ fill: '#2563eb', strokeWidth: 2, r: 2 }}
+                                            activeDot={{ r: 2, stroke: '#2563eb', strokeWidth: 2 }}
                                         />
                                     </LineChart>
                                 </ResponsiveContainer>
                             ) : (
-                                <div className="text-center text-gray-500 py-12">
-                                    <BookOpen className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                                    <p className="text-black text-sm">No courses with grades found</p>
+                                <div className="text-center text-blue-400 py-12">
+                                    <BookOpen className="h-12 w-12 mx-auto mb-4 text-blue-300" />
+                                    <p className="text-blue-900 text-sm">No courses with grades found</p>
                                     <p className="text-sm mt-2">Add courses and grades to see your performance overview</p>
                                 </div>
                             )}
                         </div>
                     </div>
                     {/* Recent Courses */}
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-5">
+                    <div className="card-3d-static rounded-xl p-6 mb-5">
                         <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-semibold text-gray-900">Recent Courses</h3>
+                            <h3 className="text-lg font-semibold text-blue-900">Recent Courses</h3>
                             <Link
                                 to="/courses"
-                                className="text-sm text-honolulu_blue hover:text-blue_green font-medium"
+                                className="text-sm text-blue-500 hover:text-blue-800 font-medium"
                             >
                                 View All
                             </Link>
@@ -659,34 +662,34 @@ const Dashboard = () => {
 
                         {recentCourses.length > 0 ? (
                             <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-200">
-                                    <thead className="bg-gray-50">
+                                <table className="min-w-full divide-y divide-white/40">
+                                    <thead className="table-3d-header">
                                         <tr>
-                                            <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th className="px-3 py-3 text-left text-xs font-medium text-blue-400 uppercase tracking-wider">
                                                 Course Name
                                             </th>
-                                            <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th className="px-3 py-3 text-left text-xs font-medium text-blue-400 uppercase tracking-wider">
                                                 Grade
                                             </th>
-                                            <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th className="px-3 py-3 text-left text-xs font-medium text-blue-400 uppercase tracking-wider">
                                                 Credits
                                             </th>
-                                            <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th className="px-3 py-3 text-left text-xs font-medium text-blue-400 uppercase tracking-wider">
                                                 Semester
                                             </th>
-                                            <th className="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            <th className="px-3 py-3 text-left text-xs font-medium text-blue-400 uppercase tracking-wider">
                                                 Actions
                                             </th>
                                         </tr>
                                     </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
+                                    <tbody className="divide-y divide-white/40">
                                         {recentCourses.map((course) => {
                                             const displayGrade = course.gradeOverride !== undefined ? course.gradeOverride : course.grade || 'N/A';
 
                                             return (
-                                                <tr key={course._id} className="">
+                                                <tr key={course.id} className="">
                                                     <td className="px-3 py-4 whitespace-nowrap">
-                                                        <div className="text-sm font-medium text-gray-900">
+                                                        <div className="text-sm font-medium text-blue-900">
                                                             {course.name}
                                                         </div>
                                                     </td>
@@ -695,23 +698,23 @@ const Dashboard = () => {
                                                             {displayGrade}
                                                         </span>
                                                     </td>
-                                                    <td className="px-3 py-4 whitespace-nowrap text-sm self-center text-gray-900">
+                                                    <td className="px-3 py-4 whitespace-nowrap text-sm self-center text-blue-900">
                                                         {course.credits}
                                                     </td>
-                                                    <td className="px-3 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                    <td className="px-3 py-4 whitespace-nowrap text-sm text-blue-900">
                                                         {course.semester} {course.year}
                                                     </td>
                                                     <td className="px-3 py-4 whitespace-nowrap text-sm font-medium">
                                                         <div className="flex items-center space-x-2">
                                                             <Link
-                                                                to={`/course/${course._id}`}
-                                                                className="p-2 text-gray-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
+                                                                to={`/course/${course.id}`}
+                                                                className="p-2 text-blue-500 hover:text-blue-800 rounded-lg hover:bg-blue-50 transition-colors"
                                                                 title="View Details"
                                                             >
                                                                 <Eye className="h-4 w-4" />
                                                             </Link>
                                                             <button
-                                                                onClick={() => handleDeleteCourse(course._id)}
+                                                                onClick={() => handleDeleteCourse(course.id)}
                                                                 className="p-2 text-gray-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
                                                                 title="Delete Course"
                                                             >
@@ -727,52 +730,52 @@ const Dashboard = () => {
                             </div>
                         ) : (
                             <div className="text-center py-8">
-                                <BookOpen className="mx-auto h-12 w-12 text-gray-400" />
-                                <h3 className="mt-2 text-sm font-medium text-gray-900">No courses yet</h3>
-                                <p className="mt-1 text-sm text-gray-500">Get started by adding your first course.</p>
+                                <BookOpen className="mx-auto h-12 w-12 text-blue-300" />
+                                <h3 className="mt-2 text-sm font-medium text-blue-900">No courses yet</h3>
+                                <p className="mt-1 text-sm text-blue-400">Get started by adding your first course.</p>
                             </div>
                         )}
                     </div>
                     {/* Grade Predictions */}
                     <div id="predictions" className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                        <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
-                            <div className="p-6 border-b border-gray-100">
-                                <h3 className="text-lg font-semibold text-gray-900">Calculate Required Final Grade</h3>
+                        <div className="card-3d-static rounded-xl">
+                            <div className="p-6 border-b border-white/40">
+                                <h3 className="text-lg font-semibold text-blue-900">Calculate Required Final Grade</h3>
                             </div>
                             <div className="p-6 space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Current Grade (%)</label>
+                                    <label className="block text-sm font-medium text-blue-900 mb-2">Current Grade (%)</label>
                                     <input
                                         type="number"
                                         value={predictionData.currentGrade}
                                         onChange={(e) => setPredictionData(prev => ({ ...prev, currentGrade: e.target.value }))}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2  focus:border-transparent"
+                                        className="w-full px-3 py-2 input-3d"
                                         placeholder="85"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Final Exam Weight (%)</label>
+                                    <label className="block text-sm font-medium text-blue-900 mb-2">Final Exam Weight (%)</label>
                                     <input
                                         type="number"
                                         value={predictionData.finalWeight}
                                         onChange={(e) => setPredictionData(prev => ({ ...prev, finalWeight: e.target.value }))}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2  focus:border-transparent"
+                                        className="w-full px-3 py-2 input-3d"
                                         placeholder="40"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Target Final Grade (%)</label>
+                                    <label className="block text-sm font-medium text-blue-900 mb-2">Target Final Grade (%)</label>
                                     <input
                                         type="number"
                                         value={predictionData.targetGrade}
                                         onChange={(e) => setPredictionData(prev => ({ ...prev, targetGrade: e.target.value }))}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-honolulu_blue focus:border-transparent"
+                                        className="w-full px-3 py-2 input-3d"
                                         placeholder="90"
                                     />
                                 </div>
                                 <button
                                     onClick={handleGradePrediction}
-                                    className="w-full bg-honolulu_blue text-white border border-gray-300 hover:bg-blue_green py-2 px-4 rounded-lg font-medium transition-all duration-300"
+                                    className="w-full btn-3d-primary py-2 px-4 rounded-lg font-medium transition-all duration-300"
                                 >
                                     Calculate Required Final Grade
                                 </button>
@@ -789,44 +792,44 @@ const Dashboard = () => {
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
-                            <div className="p-6 border-b border-gray-100">
-                                <h3 className="text-lg font-semibold text-gray-900">Calculate Final Grade</h3>
+                        <div className="card-3d-static rounded-xl">
+                            <div className="p-6 border-b border-white/40">
+                                <h3 className="text-lg font-semibold text-blue-900">Calculate Final Grade</h3>
                             </div>
                             <div className="p-6 space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Current Grade (%)</label>
+                                    <label className="block text-sm font-medium text-blue-900 mb-2">Current Grade (%)</label>
                                     <input
                                         type="number"
                                         value={predictionData.currentGrade}
                                         onChange={(e) => setPredictionData(prev => ({ ...prev, currentGrade: e.target.value }))}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-honolulu_blue focus:border-transparent"
+                                        className="w-full px-3 py-2 input-3d"
                                         placeholder="85"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Final Exam Weight (%)</label>
+                                    <label className="block text-sm font-medium text-blue-900 mb-2">Final Exam Weight (%)</label>
                                     <input
                                         type="number"
                                         value={predictionData.finalWeight}
                                         onChange={(e) => setPredictionData(prev => ({ ...prev, finalWeight: e.target.value }))}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-honolulu_blue focus:border-transparent"
+                                        className="w-full px-3 py-2 input-3d"
                                         placeholder="40"
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Final Exam Grade (%)</label>
+                                    <label className="block text-sm font-medium text-blue-900 mb-2">Final Exam Grade (%)</label>
                                     <input
                                         type="number"
                                         value={predictionData.examGrade}
                                         onChange={(e) => setPredictionData(prev => ({ ...prev, examGrade: e.target.value }))}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-honolulu_blue focus:border-transparent"
+                                        className="w-full px-3 py-2 input-3d"
                                         placeholder="88"
                                     />
                                 </div>
                                 <button
                                     onClick={handleFinalGradeCalculation}
-                                    className="w-full bg-honolulu_blue text-white border border-gray-300 hover:bg-blue_green py-2 px-4 rounded-lg font-medium transition-all duration-300"
+                                    className="w-full btn-3d-primary py-2 px-4 rounded-lg font-medium transition-all duration-300"
                                 >
                                     Calculate Final Grade
                                 </button>
@@ -847,38 +850,38 @@ const Dashboard = () => {
 
 
                     {/* Upcoming Deadlines */}
-                    <div id="deadlines" className="bg-white rounded-xl border border-gray-100 shadow-sm mb-8" >
-                        <div className="p-6 border-b border-gray-100">
-                            <h2 className="text-xl font-semibold text-gray-900">Upcoming Deadlines</h2>
+                    <div id="deadlines" className="card-3d-static rounded-xl mb-8" >
+                        <div className="p-6 border-b border-white/40">
+                            <h2 className="text-xl font-semibold text-blue-900">Upcoming Deadlines</h2>
                         </div>
                         <div className="p-6">
                             {upcomingDeadlines.length > 0 ? (
                                 <div className="space-y-4">
                                     {upcomingDeadlines.map((deadline, index) => (
-                                        <div key={index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                        <div key={index} className="flex items-center justify-between p-4 checklist-row rounded-xl">
                                             <div>
-                                                <div className="font-medium text-gray-900">{deadline.assignment}</div>
-                                                <div className="text-sm text-gray-600">{deadline.course}</div>
+                                                <div className="font-medium text-blue-900">{deadline.assignment}</div>
+                                                <div className="text-sm text-blue-400">{deadline.course}</div>
                                             </div>
                                             <div className="text-right">
-                                                <div className="text-sm font-medium text-gray-900">
+                                                <div className="text-sm font-medium text-blue-900">
                                                     {new Date(deadline.dueDate).toLocaleDateString()}
                                                 </div>
-                                                <div className="text-xs text-gray-500">{deadline.weight}% weight</div>
+                                                <div className="text-xs text-blue-300">{deadline.weight}% weight</div>
                                             </div>
                                         </div>
                                     ))}
                                 </div>
                             ) : (
-                                <div className="text-center text-gray-500 py-8">
-                                    <Calendar className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                                <div className="text-center text-blue-400 py-8">
+                                    <Calendar className="h-12 w-12 mx-auto mb-4 text-blue-300" />
                                     <p>No upcoming deadlines found</p>
                                 </div>
                             )}
                             <div className="mt-4 text-center">
                                 <Link
                                     to="/calendar"
-                                    className="text-honolulu_blue hover:text-blue_green font-medium"
+                                    className="text-blue-500 hover:text-blue-800 font-medium"
                                 >
                                     View all course deadlines →
                                 </Link>

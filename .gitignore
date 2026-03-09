@@ -77,3 +77,8 @@ coverage
 
 # Compiled binary addons (http://nodejs.org/api/addons.html)
 build/Release
+
+# Worker secrets and artifacts
+.dev.vars
+.wrangler/
+nul

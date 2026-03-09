@@ -1,17 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
-import Footer from './Footer';
 import api from '../utils/api';
 import {
     Calendar as CalendarIcon,
     List,
     ChevronLeft,
     ChevronRight,
-    Clock,
     BookOpen,
-    Plus,
-    Trash2,
     BarChart3,
     ArrowLeft,
     Eye,
@@ -61,9 +57,9 @@ const Calendar = () => {
                 course.assignments.forEach(assignment => {
                     if (assignment.dueDate && !assignment.isCompleted) {
                         allDeadlines.push({
-                            id: assignment._id || `${course._id}-${assignment.name}`,
+                            id: assignment.id || `${course.id}-${assignment.name}`,
                             title: assignment.name,
-                            courseId: course._id,
+                            courseId: course.id,
                             courseName: course.name,
                             dueDate: new Date(assignment.dueDate),
                             type: assignment.type || 'assignment',
@@ -168,8 +164,8 @@ const Calendar = () => {
             const isToday = date.toDateString() === new Date().toDateString();
 
             days.push(
-                <div key={day} className={`bg-white p-3 min-h-[120px] ${isToday ? 'bg-vivid_sky_blue-100 border-2 border-vivid_sky_blue-200' : ''}`}>
-                    <div className={`text-sm font-medium mb-2 ${isToday ? 'text-honolulu_blue' : 'text-gray-900'}`}>
+                <div key={day} className={`bg-white p-3 min-h-[120px] ${isToday ? 'bg-blue-50 border-2 border-blue-200' : ''}`}>
+                    <div className={`text-sm font-medium mb-2 ${isToday ? 'text-blue-600' : 'text-blue-900'}`}>
                         {day}
                     </div>
                     <div className="space-y-1">
@@ -198,9 +194,9 @@ const Calendar = () => {
         if (deadlines.length === 0) {
             return (
                 <div className="text-center py-12">
-                    <BookOpen className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                    <p className="text-gray-500 mb-2">No upcoming deadlines</p>
-                    <p className="text-sm text-gray-400">
+                    <BookOpen className="h-12 w-12 mx-auto mb-4 text-blue-300" />
+                    <p className="text-blue-400 mb-2">No upcoming deadlines</p>
+                    <p className="text-sm text-blue-300">
                         Add assignments to your courses to see deadlines here
                     </p>
                 </div>
@@ -210,31 +206,31 @@ const Calendar = () => {
         return (
             <div className="space-y-4">
                 {deadlines.map(deadline => (
-                    <div key={deadline.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <div key={deadline.id} className="flex items-center justify-between p-4 checklist-row rounded-xl transition-colors">
                         <div className="flex items-center space-x-4">
                             <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg ${getDeadlineTypeColor(deadline.type)}`}>
                                 {getDeadlineTypeIcon(deadline.type)}
                             </div>
                             <div>
-                                <h3 className="font-semibold text-gray-900">{deadline.title}</h3>
-                                <p className="text-sm text-gray-600">{deadline.courseName}</p>
+                                <h3 className="font-semibold text-blue-900">{deadline.title}</h3>
+                                <p className="text-sm text-blue-400">{deadline.courseName}</p>
                                 {deadline.notes && (
-                                    <p className="text-xs text-gray-500 mt-1">{deadline.notes}</p>
+                                    <p className="text-xs text-blue-300 mt-1">{deadline.notes}</p>
                                 )}
                             </div>
                         </div>
                         <div className="flex items-center space-x-4">
                             <div className="text-right">
-                                <div className="text-sm font-medium text-gray-900">
+                                <div className="text-sm font-medium text-blue-900">
                                     {formatDate(deadline.dueDate)}
                                 </div>
-                                <div className="text-xs text-gray-500">
+                                <div className="text-xs text-blue-300">
                                     {deadline.weight > 0 && `${deadline.weight}% weight`}
                                 </div>
                             </div>
                             <Link
                                 to={`/course/${deadline.courseId}`}
-                                className="p-2 text-gray-400 hover:text-honolulu_blue rounded-lg hover:bg-vivid_sky_blue-100 transition-colors"
+                                className="p-2 text-blue-400 hover:text-blue-600 rounded-lg transition-colors"
                                 title="View Course"
                             >
                                 <Eye className="h-4 w-4" />
@@ -249,31 +245,31 @@ const Calendar = () => {
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
-                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-honolulu_blue"></div>
+                <div className="spinner-3d"></div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen lg:h-screen bg-gray-50 lg:overflow-hidden">
+        <div className="min-h-screen lg:h-screen lg:overflow-hidden">
             {/* Mobile Header */}
-            <div className="lg:hidden bg-white border-b border-gray-200 p-4">
+            <div className="lg:hidden mobile-header-3d p-4">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                         <button
                             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                            className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                            className="p-2 rounded-md text-blue-400 hover:text-blue-800"
                         >
                             <Menu className="h-5 w-5" />
                         </button>
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center">
-                            <CalendarIcon className="h-5 w-5 text-black" />
+                        <div className="icon-3d w-8 h-8 rounded-lg flex items-center justify-center">
+                            <CalendarIcon className="h-4 w-4 text-blue-400" />
                         </div>
-                        <span className="text-xl font-semibold text-gray-900">Calendar</span>
+                        <span className="text-xl font-bold text-blue-900">Calendar</span>
                     </div>
                     <Link
                         to="/"
-                        className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                        className="p-2 rounded-md text-blue-400 hover:text-blue-800"
                     >
                         <ArrowLeft className="h-5 w-5" />
                     </Link>
@@ -282,18 +278,18 @@ const Calendar = () => {
 
             <div className="flex flex-col lg:flex-row lg:h-screen">
                 {/* Left Sidebar */}
-                <div className={`${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white border-b lg:border-b-0 lg:border-r border-gray-200 min-h-screen lg:min-h-full lg:max-h-screen lg:overflow-y-auto lg:sticky lg:top-0 p-4 lg:p-6 transition-transform duration-300 ease-in-out lg:transition-none flex flex-col`}>
+                <div className={`${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-50 w-64 sidebar-3d border-b lg:border-b-0 min-h-screen lg:min-h-full lg:max-h-screen lg:overflow-y-auto lg:sticky lg:top-0 p-4 lg:p-6 transition-transform duration-300 ease-in-out lg:transition-none flex flex-col`}>
                     {/* Mobile Close Button */}
                     <div className="lg:hidden flex items-center justify-between mb-6">
                         <div className="flex items-center space-x-2">
-                            <div className="w-8 h-8 rounded-lg flex items-center justify-center">
-                                <GraduationCap className="h-5 w-5 text-black" />
+                            <div className="icon-3d w-8 h-8 rounded-lg flex items-center justify-center">
+                                <GraduationCap className="h-4 w-4" />
                             </div>
-                            <span className="text-xl font-semibold text-gray-900">GPAConnect</span>
+                            <span className="text-xl font-bold text-blue-900">GPAConnect</span>
                         </div>
                         <button
                             onClick={() => setIsSidebarOpen(false)}
-                            className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                            className="p-2 rounded-md text-blue-400 hover:text-blue-800"
                         >
                             <X className="h-5 w-5" />
                         </button>
@@ -301,43 +297,43 @@ const Calendar = () => {
 
                     {/* Logo - hidden on mobile since it's in the header */}
                     <div className="hidden lg:flex items-center space-x-2 my-8">
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center">
-                            <GraduationCap className="h-5 w-5 text-black" />
+                        <div className="icon-3d w-8 h-8 rounded-lg flex items-center justify-center">
+                            <GraduationCap className="h-4 w-4" />
                         </div>
-                        <span className="text-xl font-semibold text-gray-900">GPAConnect</span>
+                        <span className="text-xl font-bold text-blue-900">GPAConnect</span>
                     </div>
 
                     {/* Navigation */}
                     <nav className="space-y-2 mb-6">
-                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">NAVIGATION</div>
+                        <div className="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-3">NAVIGATION</div>
                         <Link
                             to="/"
-                            className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                            className="flex items-center space-x-3 px-3 py-2 text-blue-400 nav-item-hover rounded-lg transition-colors"
                         >
                             <BarChart3 className="h-5 w-5" />
                             <span>Dashboard</span>
                         </Link>
                         <Link
                             to="/courses"
-                            className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                            className="flex items-center space-x-3 px-3 py-2 text-blue-400 nav-item-hover rounded-lg transition-colors"
                         >
                             <BookOpen className="h-5 w-5" />
                             <span>Courses</span>
                         </Link>
-                        <div className="flex items-center space-x-3 px-3 py-2 bg-blue-50 text-black rounded-lg">
+                        <div className="flex items-center space-x-3 px-3 py-2 nav-item-active text-blue-900 rounded-lg">
                             <CalendarIcon className="h-5 w-5" />
                             <span>Calendar</span>
                         </div>
                         <Link
                             to="/settings"
-                            className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                            className="flex items-center space-x-3 px-3 py-2 text-blue-400 nav-item-hover rounded-lg transition-colors"
                         >
                             <Settings className="h-5 w-5" />
                             <span>GPA Settings</span>
                         </Link>
                         <Link
                             to="/account"
-                            className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors"
+                            className="flex items-center space-x-3 px-3 py-2 text-blue-400 nav-item-hover rounded-lg transition-colors"
                         >
                             <User className="h-5 w-5" />
                             <span>Account</span>
@@ -346,13 +342,13 @@ const Calendar = () => {
 
                     {/* View Toggle */}
                     <div className="mb-6">
-                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">VIEW OPTIONS</div>
+                        <div className="text-xs font-semibold text-blue-400 uppercase tracking-wider mb-3">VIEW OPTIONS</div>
                         <div className="flex flex-col space-y-2">
                             <button
                                 onClick={() => setView('calendar')}
                                 className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${view === 'calendar'
-                                    ? 'bg-blue-50 text-black'
-                                    : 'text-gray-600 hover:bg-gray-50'
+                                    ? 'nav-item-active text-blue-900'
+                                    : 'text-blue-400 nav-item-hover'
                                     }`}
                             >
                                 <CalendarIcon className="h-4 w-4" />
@@ -361,8 +357,8 @@ const Calendar = () => {
                             <button
                                 onClick={() => setView('list')}
                                 className={`flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${view === 'list'
-                                    ? 'bg-blue-50 text-black'
-                                    : 'text-gray-600 hover:bg-gray-50'
+                                    ? 'nav-item-active text-blue-900'
+                                    : 'text-blue-400 nav-item-hover'
                                     }`}
                             >
                                 <List className="h-4 w-4" />
@@ -371,10 +367,10 @@ const Calendar = () => {
                         </div>
                     </div>
 
-                    <div className="mt-auto pt-6 border-t border-gray-200">
+                    <div className="mt-auto pt-6 border-t border-white/40">
                         <Link
                             to="/"
-                            className="flex items-center space-x-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors w-full"
+                            className="flex items-center space-x-3 px-3 py-2 text-blue-400 nav-item-hover rounded-lg transition-colors w-full"
                         >
                             <ArrowLeft className="h-5 w-5" />
                             <span>Back to Dashboard</span>
@@ -385,7 +381,7 @@ const Calendar = () => {
                 {/* Overlay for mobile sidebar */}
                 {isSidebarOpen && (
                     <div
-                        className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+                        className="lg:hidden fixed inset-0 modal-overlay-3d z-40"
                         onClick={() => setIsSidebarOpen(false)}
                     />
                 )}
@@ -394,26 +390,26 @@ const Calendar = () => {
                 <div className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
                     {/* Calendar View */}
                     {view === 'calendar' && (
-                        <div className="rounded-xl shadow-sm border border-gray-200 p-6">
+                        <div className="card-3d-static rounded-xl p-6">
                             {/* Calendar Header */}
                             <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-xl font-semibold text-honolulu_blue">{getMonthName(currentDate)}</h2>
+                                <h2 className="text-xl font-semibold text-blue-600">{getMonthName(currentDate)}</h2>
                                 <div className="flex items-center space-x-2">
                                     <button
                                         onClick={previousMonth}
-                                        className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                                        className="p-2 text-blue-400 hover:text-blue-800 rounded-lg transition-colors"
                                     >
                                         <ChevronLeft className="h-5 w-5" />
                                     </button>
                                     <button
                                         onClick={() => setCurrentDate(new Date())}
-                                        className="px-3 py-2 text-sm text-honolulu_blue hover:text-blue_green font-medium"
+                                        className="px-3 py-2 text-sm text-blue-500 hover:text-blue-800 font-medium"
                                     >
                                         Today
                                     </button>
                                     <button
                                         onClick={nextMonth}
-                                        className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                                        className="p-2 text-blue-400 hover:text-blue-800 rounded-lg transition-colors"
                                     >
                                         <ChevronRight className="h-5 w-5" />
                                     </button>
@@ -421,11 +417,11 @@ const Calendar = () => {
                             </div>
 
                             {/* Calendar Grid */}
-                            <div className="grid grid-cols-7 gap-px bg-gray-200 rounded-lg overflow-hidden">
+                            <div className="grid grid-cols-7 gap-px bg-blue-100/30 rounded-lg overflow-hidden">
                                 {/* Day Headers */}
                                 {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                                    <div key={day} className="bg-gray-50 p-3 text-center">
-                                        <div className="text-sm font-medium text-gray-700">{day}</div>
+                                    <div key={day} className="table-3d-header p-3 text-center">
+                                        <div className="text-sm font-medium text-blue-900">{day}</div>
                                     </div>
                                 ))}
 
@@ -437,15 +433,15 @@ const Calendar = () => {
 
                     {/* List View */}
                     {view === 'list' && (
-                        <div className="rounded-xl shadow-sm border border-gray-200 p-6">
-                            <h2 className="text-xl font-semibold text-honolulu_blue mb-6">Upcoming Deadlines</h2>
+                        <div className="card-3d-static rounded-xl p-6">
+                            <h2 className="text-xl font-semibold text-blue-600 mb-6">Upcoming Deadlines</h2>
                             {renderListView()}
                         </div>
                     )}
 
                     {/* Error Display */}
                     {error && (
-                        <div className="mt-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                        <div className="mt-6 alert-error-3d px-4 py-3 rounded-lg">
                             {error}
                         </div>
                     )}

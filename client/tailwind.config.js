@@ -128,7 +128,7 @@ module.exports = {
           }
         },
         fontFamily: {
-          sans: ["Inter", "ui-sans-serif", "system-ui"],       // default body font
+          sans: ["Satoshi", "Inter", "ui-sans-serif", "system-ui", "sans-serif"],       // default body font
           heading: ["Archivo", "sans-serif"],                  // for headings
           mono: ["Roboto Mono", "ui-monospace", "monospace"],  // for code/inputs
           alt: ["Inconsolata", "monospace"],                   // optional alt font

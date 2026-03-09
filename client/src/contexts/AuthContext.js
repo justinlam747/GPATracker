@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
 import api from '../utils/api';
 
 const AuthContext = createContext();
@@ -15,147 +16,138 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // Debug user state changes
     useEffect(() => {
-        console.log('User state changed:', user ? `Logged in as ${user.email}` : 'No user');
-    }, [user]);
+        // Check initial session
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session) {
+                fetchProfile(session);
+            } else {
+                setLoading(false);
+            }
+        });
 
-    // Debug loading state changes
-    useEffect(() => {
-        console.log('Loading state changed:', loading);
-    }, [loading]);
+        // Listen for auth state changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+            async (event, session) => {
+                if (event === 'SIGNED_IN' && session) {
+                    await fetchProfile(session);
+                } else if (event === 'SIGNED_OUT') {
+                    setUser(null);
+                } else if (event === 'TOKEN_REFRESHED' && session) {
+                    // Session refreshed, update profile if needed
+                    await fetchProfile(session);
+                }
+            }
+        );
 
-    useEffect(() => {
-        checkAuthStatus();
+        return () => subscription.unsubscribe();
     }, []);
 
-    const checkAuthStatus = async () => {
-        console.log('=== AUTH STATUS CHECK START ===');
+    const buildFallbackUser = (session) => ({
+        id: session?.user?.id || '',
+        email: session?.user?.email || '',
+        firstName: session?.user?.user_metadata?.first_name || '',
+        lastName: session?.user?.user_metadata?.last_name || '',
+        gpaScale: '4.0',
+    });
+
+    const fetchProfile = async (session) => {
         try {
-            const token = localStorage.getItem('token');
-            console.log('Token from localStorage:', token ? `${token.substring(0, 20)}...` : 'null');
-            console.log('Token length:', token ? token.length : 0);
+            // Get user profile from our Worker API
+            const response = await api.get('/auth/me', {
+                headers: {
+                    Authorization: `Bearer ${session.access_token}`,
+                },
+            });
 
-            if (token) {
-                // Set the token in API headers immediately
-                api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-                console.log('Token set in headers:', api.defaults.headers.common['Authorization'] ? 'success' : 'failed');
-
-                // Verify the token is still valid
-                try {
-                    console.log('Calling /auth/me endpoint...');
-                    const response = await api.get('/auth/me');
-                    console.log('Auth me response status:', response.status);
-                    console.log('Auth me response data:', response.data);
-                    // Check if response.data contains user information directly
-                    if (response.data && response.data.email) {
-                        console.log('User data found:', response.data);
-                        setUser(response.data);
-                        console.log('User set successfully:', response.data.email);
-                    } else {
-                        console.log('No user data in response, throwing error');
-                        throw new Error('Invalid response format: missing user data');
-                    }
-                } catch (error) {
-                    console.log('Auth me error details:', {
-                        status: error.response?.status,
-                        message: error.message,
-                        response: error.response?.data
-                    });
-
-                    if (error.response?.status === 401) {
-                        // Token expired, clear everything
-                        console.log('Token expired (401), clearing auth state');
-                        localStorage.removeItem('token');
-                        delete api.defaults.headers.common['Authorization'];
-                        setUser(null);
-                    } else {
-                        console.log('Non-401 error, throwing to outer catch');
-                        throw error;
-                    }
-                }
+            if (response.data && response.data.email) {
+                setUser(response.data);
             } else {
-                console.log('No token found in localStorage');
+                setUser(buildFallbackUser(session));
             }
         } catch (error) {
-            console.log('Outer catch - Token validation failed:', {
-                name: error.name,
-                message: error.message,
-                stack: error.stack
-            });
-            // Clear invalid token
-            localStorage.removeItem('token');
-            delete api.defaults.headers.common['Authorization'];
-            setUser(null);
+            console.error('Error fetching profile:', error);
+            setUser(buildFallbackUser(session));
         } finally {
-            console.log('Setting loading to false');
             setLoading(false);
-            console.log('=== AUTH STATUS CHECK END ===');
         }
     };
 
-
-
     const login = async (email, password) => {
         try {
-            const response = await api.post('/auth/login', { email, password });
-            const { accessToken, user } = response.data;
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+            });
 
-            localStorage.setItem('token', accessToken);
-            api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
-            setUser(user);
+            if (error) {
+                return { success: false, message: error.message };
+            }
+
+            if (data.session) {
+                await fetchProfile(data.session);
+            }
 
             return { success: true };
         } catch (error) {
-            const message = error.response?.data?.message || 'Login failed';
-            return { success: false, message };
+            return { success: false, message: error.message || 'Login failed' };
         }
     };
 
     const register = async (firstName, email, password, confirmPassword) => {
+        if (password !== confirmPassword) {
+            return { success: false, message: 'Passwords do not match' };
+        }
+
         try {
-            const response = await api.post('/auth/register', {
-                firstName,
+            const { data, error } = await supabase.auth.signUp({
                 email,
                 password,
-                confirmPassword
+                options: {
+                    data: {
+                        first_name: firstName,
+                    },
+                },
             });
-            const { accessToken, user } = response.data; // Use accessToken consistently
 
-            // Store token consistently
-            localStorage.setItem('token', accessToken);
-            api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
-            setUser(user);
+            if (error) {
+                return { success: false, message: error.message };
+            }
+
+            if (data.session) {
+                await fetchProfile(data.session);
+            }
 
             return { success: true };
         } catch (error) {
-            const message = error.response?.data?.message || 'Registration failed';
-            return { success: false, message };
+            return { success: false, message: error.message || 'Registration failed' };
         }
     };
 
-    const logout = () => {
-        console.log('=== LOGOUT START ===');
-
-        // Clear all auth-related data
-        localStorage.removeItem('token');
-        localStorage.removeItem('cachedUser');
-        localStorage.removeItem('lastTokenValidation');
-
-        // Clear API headers
-        delete api.defaults.headers.common['Authorization'];
-
-        // Reset user state
+    const logout = async () => {
+        await supabase.auth.signOut();
         setUser(null);
-
-        // Force navigation to home page
         window.location.href = '/';
-
-        console.log('=== LOGOUT COMPLETE ===');
     };
 
     const updateUser = (updatedUser) => {
         setUser(updatedUser);
+    };
+
+    const updateProfile = async (profileData) => {
+        try {
+            const response = await api.put('/user/profile', profileData);
+            if (response.data && response.data.user) {
+                setUser(response.data.user);
+                return { success: true };
+            }
+            return { success: false, message: 'Failed to update profile' };
+        } catch (error) {
+            return {
+                success: false,
+                message: error.response?.data?.message || 'Failed to update profile',
+            };
+        }
     };
 
     const value = {
@@ -165,7 +157,8 @@ export const AuthProvider = ({ children }) => {
         register,
         logout,
         updateUser,
-        isAuthenticated: !!user
+        updateProfile,
+        isAuthenticated: !!user,
     };
 
     return (

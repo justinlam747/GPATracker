@@ -16,7 +16,6 @@ import AccountSettings from './components/AccountSettings';
 import TermsOfService from './components/TermsOfService';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import AppLayout from './components/AppLayout';
-import Navbar from './components/Navbar';
 import './App.css';
 
 // Protected Route Component
@@ -25,8 +24,13 @@ const ProtectedRoute = ({ children }) => {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600"></div>
+            <div className="min-h-screen relative flex items-center justify-center">
+                <div className="landing-bg" aria-hidden="true" />
+                <div className="vignette-overlay" aria-hidden="true" />
+                <div className="grain-overlay" aria-hidden="true" />
+                <div className="relative z-10">
+                    <div className="spinner-3d"></div>
+                </div>
             </div>
         );
     }
