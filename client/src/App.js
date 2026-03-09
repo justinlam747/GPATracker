@@ -23,11 +23,9 @@ const SyllabusImport = lazy(() => import('./components/SyllabusImport'));
 const CourseSchemaSearch = lazy(() => import('./components/CourseSchemaSearch'));
 const ChatAgent = lazy(() => import('./components/ChatAgent'));
 
-// Loading fallback
+// Loading fallback — blank screen to avoid flash of spinner
 const PageLoader = () => (
-    <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600"></div>
-    </div>
+    <div className="min-h-screen bg-white" />
 );
 
 // Protected Route Component

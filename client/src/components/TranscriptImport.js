@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload, FileText, Check, X, AlertCircle, ArrowLeft, Trash2 } from 'lucide-react';
+import { Upload, FileText, Check, AlertCircle, ArrowLeft } from 'lucide-react';
 import api from '../utils/api';
 
 const TranscriptImport = () => {

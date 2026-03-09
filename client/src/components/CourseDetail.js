@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Plus, Edit, Trash2, X, BookOpen, Award, ArrowLeft, GraduationCap, Menu, BarChart3, Calendar, Settings, User, FileText, Layout } from 'lucide-react';
-import Footer from './Footer';
 import api from '../utils/api';
 import { Link } from 'react-router-dom';
 
@@ -123,7 +122,7 @@ const CourseDetail = () => {
         }
     };
 
-    const handleDeleteCourse = async () => {
+    const handleDeleteCourse = async () => { // eslint-disable-line no-unused-vars
 
 
         try {
