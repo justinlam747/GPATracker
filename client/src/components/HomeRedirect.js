@@ -1,20 +1,27 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { GraduationCap } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import LandingPage from './LandingPage';
 import Dashboard from './Dashboard';
 
 const HomeRedirect = () => {
     const { isAuthenticated, loading } = useAuth();
+    const [introComplete, setIntroComplete] = useState(false);
 
-    if (loading) {
+    useEffect(() => {
+        const timer = setTimeout(() => setIntroComplete(true), 3000);
+        return () => clearTimeout(timer);
+    }, []);
+
+    if (loading || !introComplete) {
         return (
-            <div className="min-h-screen relative flex items-center justify-center">
-                <div className="landing-bg" aria-hidden="true" />
-                <div className="vignette-overlay" aria-hidden="true" />
-                <div className="grain-overlay" aria-hidden="true" />
-                <div className="relative z-10">
-                    <div className="spinner-3d"></div>
+            <div className="gp-loading-screen" role="status" aria-live="polite">
+                <div className="gp-loading-brand">
+                    <GraduationCap size={42} aria-hidden="true" />
+                    <span>GPAConnect.</span>
                 </div>
+                <div className="gp-loading-track" aria-hidden="true"><div /></div>
+                <p>Your next chapter is loading.</p>
             </div>
         );
     }
